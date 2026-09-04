@@ -28,7 +28,7 @@ func main() {
 	githubToken := os.Getenv("GITHUB_TOKEN")
 	githubClient := ghextractor.NewClient(githubToken)
 	mistralClient := llm.NewClient(apiKey)
-	username := "var-raphael"
+	username := "olly-techie"
 
 	job := llm.JobContext{
 		Title:       "Founding Full-Stack (AI)",
@@ -58,16 +58,39 @@ func main() {
 	}
 	fmt.Fprintln(f)
 
+	fmt.Fprintln(f, "=== TOP-K LANGUAGE BREAKDOWN (debug) ===")
+	for _, r := range result.TopRepos {
+		var total int
+		for _, b := range r.Languages {
+			total += b
+		}
+		fmt.Fprintf(f, "%s (total %d bytes):\n", r.Repo.Name, total)
+		for lang, bytes := range r.Languages {
+			pct := 0.0
+			if total > 0 {
+				pct = float64(bytes) / float64(total) * 100
+			}
+			marker := ""
+			for _, reqLang := range job.Stack {
+				if lang == reqLang && pct >= 3.0 {
+					marker = "  <-- COUNTS toward stack match for " + reqLang
+				}
+			}
+			fmt.Fprintf(f, "  %-15s %8d bytes  (%.1f%%)%s\n", lang, bytes, pct, marker)
+		}
+	}
+	fmt.Fprintln(f)
+
 	info := scoring.CandidateInfo{
-		ID:              "cand-test-001",
-		Name:            "Raphael Samuel",
+		ID:              "cand-test-002",
+		Name:            "Olly",
 		GithubUsername:  username,
-		Email:           "raphael@var-raphael.dev",
-		Country:         "Nigeria",
-		YearsExperience: 6,
+		Email:           "olly@example.com",
+		Country:         "Unknown",
+		YearsExperience: 2,
 	}
 
-	report := scoring.BuildReport("cand-test-001", "founding-fullstack-ai-001", info, job.Stack, result)
+	report := scoring.BuildReport("cand-test-002", "founding-fullstack-ai-001", info, job.Stack, result)
 
 	fmt.Fprintf(f, "Stack Match:       %.1f/10\n", report.Reasoning.Breakdown.StackMatch)
 	fmt.Fprintf(f, "Evidence Strength: %.1f/10\n", report.Reasoning.Breakdown.EvidenceStrength)
