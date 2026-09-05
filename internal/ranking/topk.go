@@ -135,6 +135,9 @@ func selectTopK(scored []ScoredRepo, jobStack []string, topK int) []ScoredRepo {
 			if selected[i] {
 				continue
 			}
+			if !hasRealSubstanceForFiller(scored[i]) {
+				continue
+			}
 			selected[i] = true
 		}
 	}
@@ -146,6 +149,18 @@ func selectTopK(scored []ScoredRepo, jobStack []string, topK int) []ScoredRepo {
 		}
 	}
 	return out
+}
+
+const minTreeFilesForFiller = 8
+
+func hasRealSubstanceForFiller(sr ScoredRepo) bool {
+	if sr.Tree == nil || len(sr.Tree.Paths) < minTreeFilesForFiller {
+		return false
+	}
+	if len(sr.Languages) < 2 {
+		return false
+	}
+	return true
 }
 
 func repoCoversLanguage(sr ScoredRepo, lang string) bool {

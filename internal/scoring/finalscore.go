@@ -74,15 +74,15 @@ func combinedStackMatch(repos []ranking.ScoredRepo, jobStack []string) float64 {
 	return ratio * 10.0
 }
 
-const strongLanguagePresence = 0.15
-const weakLanguagePresence = 0.03
-const minReposForWeakPattern = 2
+const strongLanguagePresence = 0.40
+const minTreeFilesForStackMatch = 8
 
 func languageCoveredAcross(lang string, repos []ranking.ScoredRepo) bool {
-	reposWithWeakPresence := 0
-
 	for _, r := range repos {
 		if r.Languages == nil {
+			continue
+		}
+		if r.Tree == nil || len(r.Tree.Paths) < minTreeFilesForStackMatch {
 			continue
 		}
 		var totalBytes int
@@ -100,13 +100,10 @@ func languageCoveredAcross(lang string, repos []ranking.ScoredRepo) bool {
 			if proportion >= strongLanguagePresence {
 				return true
 			}
-			if proportion >= weakLanguagePresence {
-				reposWithWeakPresence++
-			}
 		}
 	}
 
-	return reposWithWeakPresence >= minReposForWeakPattern
+	return false
 }
 
 func normalizedAverageEvidenceStrength(repos []ranking.ScoredRepo) float64 {
