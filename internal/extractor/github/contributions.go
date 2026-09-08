@@ -3,14 +3,11 @@ package github
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/google/go-github/v66/github"
 )
 
-// RawContribution is one merged PR the candidate made on a repo they don't
-// own. Flat and unopinionated, same philosophy as tree.go — we hand over
-// the real numbers (contributors, stars) and let scoring/LLM judge weight,
-// not a hardcoded threshold here.
 type RawContribution struct {
 	RepoOwner        string
 	RepoName         string
@@ -18,18 +15,11 @@ type RawContribution struct {
 	PRUrl            string
 	PRTitle          string
 	MergedAt         string
+	MergedPRCount    int
 	ContributorCount int
 	Stars            int
 }
 
-// FetchExternalContributions finds every merged PR authored by username
-// where the target repo is NOT owned by username — i.e. real external
-// open-source contributions, not just their own commit history.
-//
-// Uses the Search API (issues/PRs), which is the only way to query "all
-// merged PRs by this author" without walking every repo on GitHub. Search
-// API has its own tighter rate limit (30 req/min authenticated, 10/min
-// unauth) — worth knowing before running this against many candidates.
 func FetchExternalContributions(ctx context.Context, client *github.Client, username string) ([]RawContribution, error) {
 	query := fmt.Sprintf("author:%s type:pr is:merged", username)
 	opts := &github.SearchOptions{
@@ -40,7 +30,16 @@ func FetchExternalContributions(ctx context.Context, client *github.Client, user
 		},
 	}
 
-	var contributions []RawContribution
+	type prSummary struct {
+		url      string
+		title    string
+		mergedAt string
+	}
+
+	mostRecentPRByRepo := make(map[string]prSummary)
+	prCountByRepo := make(map[string]int)
+	repoOrder := make([]string, 0)
+
 	for {
 		result, resp, err := client.Search.Issues(ctx, query, opts)
 		if err != nil {
@@ -50,35 +49,26 @@ func FetchExternalContributions(ctx context.Context, client *github.Client, user
 		for _, issue := range result.Issues {
 			owner, repoName, ok := parseRepoFromIssueURL(issue.GetRepositoryURL())
 			if !ok {
-				continue // unexpected URL shape, skip rather than guess
-			}
-
-			if owner == username {
-				continue // own repo — that's normal commit activity, not an external contribution
-			}
-
-			repo, _, err := client.Repositories.Get(ctx, owner, repoName)
-			if err != nil {
-				// target repo may have been deleted/renamed since the PR
-				// merged — skip it rather than fail the whole fetch
 				continue
 			}
 
-			contributorCount, err := fetchContributorCount(ctx, client, owner, repoName)
-			if err != nil {
-				contributorCount = 0 // unknown rather than fail — scoring can treat 0 as "uncertain"
+			if owner == username {
+				continue
 			}
 
-			contributions = append(contributions, RawContribution{
-				RepoOwner:        owner,
-				RepoName:         repoName,
-				RepoURL:          repo.GetHTMLURL(),
-				PRUrl:            issue.GetHTMLURL(),
-				PRTitle:          issue.GetTitle(),
-				MergedAt:         issue.GetClosedAt().String(),
-				ContributorCount: contributorCount,
-				Stars:            repo.GetStargazersCount(),
-			})
+			key := owner + "/" + repoName
+			if _, seen := prCountByRepo[key]; !seen {
+				repoOrder = append(repoOrder, key)
+			}
+			prCountByRepo[key]++
+
+			if _, exists := mostRecentPRByRepo[key]; !exists {
+				mostRecentPRByRepo[key] = prSummary{
+					url:      issue.GetHTMLURL(),
+					title:    issue.GetTitle(),
+					mergedAt: issue.GetClosedAt().String(),
+				}
+			}
 		}
 
 		if resp.NextPage == 0 {
@@ -87,12 +77,50 @@ func FetchExternalContributions(ctx context.Context, client *github.Client, user
 		opts.Page = resp.NextPage
 	}
 
+	contributions := make([]RawContribution, 0, len(repoOrder))
+	for _, key := range repoOrder {
+		owner, repoName, ok := splitRepoKey(key)
+		if !ok {
+			continue
+		}
+
+		repo, _, err := client.Repositories.Get(ctx, owner, repoName)
+		if err != nil {
+			continue
+		}
+
+		contributorCount, err := fetchContributorCount(ctx, client, owner, repoName)
+		if err != nil {
+			contributorCount = 0
+		}
+
+		recent := mostRecentPRByRepo[key]
+
+		contributions = append(contributions, RawContribution{
+			RepoOwner:        owner,
+			RepoName:         repoName,
+			RepoURL:          repo.GetHTMLURL(),
+			PRUrl:            recent.url,
+			PRTitle:          recent.title,
+			MergedAt:         recent.mergedAt,
+			MergedPRCount:    prCountByRepo[key],
+			ContributorCount: contributorCount,
+			Stars:            repo.GetStargazersCount(),
+		})
+	}
+
+	sort.Slice(contributions, func(i, j int) bool {
+		return contributions[i].ContributorCount > contributions[j].ContributorCount
+	})
+	if len(contributions) > maxDistinctContributionRepos {
+		contributions = contributions[:maxDistinctContributionRepos]
+	}
+
 	return contributions, nil
 }
 
-// fetchContributorCount gets the total contributor count via the Link
-// header's last page, rather than paginating through every contributor —
-// one request instead of potentially hundreds for a large repo.
+const maxDistinctContributionRepos = 5
+
 func fetchContributorCount(ctx context.Context, client *github.Client, owner, repo string) (int, error) {
 	opts := &github.ListContributorsOptions{
 		ListOptions: github.ListOptions{PerPage: 1},
@@ -106,12 +134,9 @@ func fetchContributorCount(ctx context.Context, client *github.Client, owner, re
 	if resp.LastPage > 0 {
 		return resp.LastPage, nil
 	}
-	// no pagination happened — either 0 or 1 contributor total
 	return len(contributors), nil
 }
 
-// parseRepoFromIssueURL extracts "owner", "repo" from a repository_url like
-// "https://api.github.com/repos/owner/repo".
 func parseRepoFromIssueURL(url string) (owner, repo string, ok bool) {
 	const marker = "/repos/"
 	idx := indexOf(url, marker)
@@ -120,6 +145,14 @@ func parseRepoFromIssueURL(url string) (owner, repo string, ok bool) {
 	}
 	rest := url[idx+len(marker):]
 	parts := splitOnce(rest, '/')
+	if len(parts) != 2 {
+		return "", "", false
+	}
+	return parts[0], parts[1], true
+}
+
+func splitRepoKey(key string) (owner, repo string, ok bool) {
+	parts := splitOnce(key, '/')
 	if len(parts) != 2 {
 		return "", "", false
 	}

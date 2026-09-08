@@ -47,6 +47,16 @@ Respond ONLY with valid JSON matching this exact shape, nothing else, no markdow
   "has_trust_flag": <true|false>
 }`
 
+const maxTreePathsInPrompt = 100
+const maxCommitsInPrompt = 30
+
+func treeTruncationNote(truncated bool) string {
+	if !truncated {
+		return ""
+	}
+	return ", truncated to a representative sample"
+}
+
 func BuildUserPrompt(job JobContext, topRepos []ranking.ScoredRepo, contributions []ghextractor.RawContribution) string {
 	var b strings.Builder
 
@@ -55,7 +65,11 @@ func BuildUserPrompt(job JobContext, topRepos []ranking.ScoredRepo, contribution
 	fmt.Fprintf(&b, "Required stack: %s\n", strings.Join(job.Stack, ", "))
 	fmt.Fprintf(&b, "Description:\n%s\n\n", job.Description)
 
-	fmt.Fprintf(&b, "CANDIDATE'S TOP %d REPOS (already narrowed from their full profile by relevance, recency, and activity)\n\n", len(topRepos))
+	if len(topRepos) == 0 {
+		b.WriteString("CANDIDATE'S OWNED REPOS: none. Every repo on their GitHub account is either a fork with no original commits, or too thin to count as real evidence. Do not invent or assume any owned-repo work — if their contributions below are strong, that is the entirety of their real, verifiable technical evidence, and the score should be built from that alone.\n\n")
+	} else {
+		fmt.Fprintf(&b, "CANDIDATE'S TOP %d REPOS (already narrowed from their full profile by relevance, recency, and activity)\n\n", len(topRepos))
+	}
 
 	for i, sr := range topRepos {
 		fmt.Fprintf(&b, "--- Repo %d: %s ---\n", i+1, sr.Repo.Name)
@@ -89,7 +103,13 @@ func BuildUserPrompt(job JobContext, topRepos []ranking.ScoredRepo, contribution
 		}
 
 		if sr.Tree != nil {
-			fmt.Fprintf(&b, "File tree (%d entries):\n%s\n", len(sr.Tree.Paths), strings.Join(sr.Tree.Paths, ", "))
+			paths := sr.Tree.Paths
+			truncatedTree := false
+			if len(paths) > maxTreePathsInPrompt {
+				paths = paths[:maxTreePathsInPrompt]
+				truncatedTree = true
+			}
+			fmt.Fprintf(&b, "File tree (%d entries total%s):\n%s\n", len(sr.Tree.Paths), treeTruncationNote(truncatedTree), strings.Join(paths, ", "))
 			if sr.Tree.HasReadme {
 				b.WriteString("README")
 				if sr.Tree.ReadmeTrunced {
@@ -102,15 +122,19 @@ func BuildUserPrompt(job JobContext, topRepos []ranking.ScoredRepo, contribution
 		}
 
 		if len(sr.Commits) > 0 {
-			fmt.Fprintf(&b, "Recent commit timestamps (%d most recent, newest first — use this ONLY to judge cadence: steady/ongoing effort vs a single burst vs abandoned, relative to what this job's title/description implies about role and seniority. Do NOT comment on time of day, weekday/weekend split, or work-life balance):\n", len(sr.Commits))
-			for _, c := range sr.Commits {
+			commits := sr.Commits
+			if len(commits) > maxCommitsInPrompt {
+				commits = commits[:maxCommitsInPrompt]
+			}
+			fmt.Fprintf(&b, "Recent commit timestamps (%d most recent, newest first — use this ONLY to judge cadence: steady/ongoing effort vs a single burst vs abandoned, relative to what this job's title/description implies about role and seniority. Do NOT comment on time of day, weekday/weekend split, or work-life balance):\n", len(commits))
+			for _, c := range commits {
 				shortMsg := c.Message
 				if idx := strings.IndexByte(shortMsg, '\n'); idx != -1 {
 					shortMsg = shortMsg[:idx]
 				}
 				fmt.Fprintf(&b, "  %s (%s) — %s\n", c.Timestamp.Format("2006-01-02 15:04"), c.Timestamp.Weekday(), shortMsg)
 			}
-			if len(sr.Commits) < 8 {
+			if len(commits) < 8 {
 				b.WriteString("  Note: small sample size — avoid over-reading a strong pattern from this few data points.\n")
 			}
 		}
@@ -119,15 +143,16 @@ func BuildUserPrompt(job JobContext, topRepos []ranking.ScoredRepo, contribution
 	}
 
 	if len(contributions) > 0 {
-		fmt.Fprintf(&b, "CANDIDATE'S EXTERNAL OPEN-SOURCE CONTRIBUTIONS (%d merged pull requests on repos NOT owned by the candidate — real, independently-reviewed work, since a maintainer had to accept each one)\n\n", len(contributions))
+		fmt.Fprintf(&b, "CANDIDATE'S EXTERNAL OPEN-SOURCE CONTRIBUTIONS (%d distinct repos NOT owned by the candidate where they have at least one merged pull request — real, independently-reviewed work, since a maintainer had to accept each one)\n\n", len(contributions))
 		for i, c := range contributions {
 			fmt.Fprintf(&b, "--- Contribution %d ---\n", i+1)
 			fmt.Fprintf(&b, "Target repo: %s/%s (%d contributors, %d stars — use these numbers as-is to judge how significant this project is, don't guess)\n", c.RepoOwner, c.RepoName, c.ContributorCount, c.Stars)
-			fmt.Fprintf(&b, "PR title: %s\n", c.PRTitle)
-			fmt.Fprintf(&b, "Merged: %s\n", c.MergedAt)
+			fmt.Fprintf(&b, "Merged PRs by this candidate in this repo: %d\n", c.MergedPRCount)
+			fmt.Fprintf(&b, "Most recent merged PR title: %s\n", c.PRTitle)
+			fmt.Fprintf(&b, "Most recent merge date: %s\n", c.MergedAt)
 			fmt.Fprintf(&b, "PR URL: %s\n\n", c.PRUrl)
 		}
-		b.WriteString("Note: weigh each contribution by the target repo's real size (contributor count, stars) shown above — a merged PR to a large, well-established project is stronger evidence than one to a tiny repo, but even a small one is genuine, verified work: a maintainer reviewed and accepted it. Do not treat contribution size as a reason to exclude it entirely, only as a reason to weigh it appropriately.\n\n")
+		b.WriteString("Note: weigh each contribution by the target repo's real size (contributor count, stars) shown above — a merged PR to a large, well-established project is stronger evidence than one to a tiny repo, but even a small one is genuine, verified work: a maintainer reviewed and accepted it. A high merged-PR count within a single repo suggests sustained, embedded involvement in that one project (which could mean close team membership rather than one-off outside contribution) — weigh breadth across distinct repos more heavily than depth in just one. Do not treat contribution size as a reason to exclude it entirely, only as a reason to weigh it appropriately.\n\n")
 	}
 
 	return b.String()

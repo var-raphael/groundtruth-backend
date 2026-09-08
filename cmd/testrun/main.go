@@ -10,8 +10,6 @@ import (
 	"github.com/joho/godotenv"
 	ghextractor "github.com/var-raphael/groundtruth/internal/extractor/github"
 	"github.com/var-raphael/groundtruth/internal/llm"
-	"github.com/var-raphael/groundtruth/internal/models"
-	"github.com/var-raphael/groundtruth/internal/outreach"
 	"github.com/var-raphael/groundtruth/internal/scoring"
 )
 
@@ -28,7 +26,7 @@ func main() {
 	githubToken := os.Getenv("GITHUB_TOKEN")
 	githubClient := ghextractor.NewClient(githubToken)
 	mistralClient := llm.NewClient(apiKey)
-	username := "var-raphael"
+	username := "drew-u410"
 
 	job := llm.JobContext{
 		Title:       "Founding Full-Stack (AI)",
@@ -52,45 +50,22 @@ func main() {
 	if result.ContributionsError != "" {
 		fmt.Fprintf(f, "CONTRIBUTIONS ERROR: %s\n", result.ContributionsError)
 	}
-	fmt.Fprintf(f, "Contributions found: %d\n", len(result.Contributions))
+	fmt.Fprintf(f, "Contributions found: %d distinct repos\n", len(result.Contributions))
 	for _, c := range result.Contributions {
-		fmt.Fprintf(f, "- %s/%s (%d contributors)\n", c.RepoOwner, c.RepoName, c.ContributorCount)
-	}
-	fmt.Fprintln(f)
-
-	fmt.Fprintln(f, "=== TOP-K LANGUAGE BREAKDOWN (debug) ===")
-	for _, r := range result.TopRepos {
-		var total int
-		for _, b := range r.Languages {
-			total += b
-		}
-		fmt.Fprintf(f, "%s (total %d bytes):\n", r.Repo.Name, total)
-		for lang, bytes := range r.Languages {
-			pct := 0.0
-			if total > 0 {
-				pct = float64(bytes) / float64(total) * 100
-			}
-			marker := ""
-			for _, reqLang := range job.Stack {
-				if lang == reqLang && pct >= 3.0 {
-					marker = "  <-- COUNTS toward stack match for " + reqLang
-				}
-			}
-			fmt.Fprintf(f, "  %-15s %8d bytes  (%.1f%%)%s\n", lang, bytes, pct, marker)
-		}
+		fmt.Fprintf(f, "- %s/%s (%d contributors, %d merged PRs by candidate)\n", c.RepoOwner, c.RepoName, c.ContributorCount, c.MergedPRCount)
 	}
 	fmt.Fprintln(f)
 
 	info := scoring.CandidateInfo{
-		ID:              "cand-test-001",
-		Name:            "Raphael Samuel",
+		ID:              "cand-test-004",
+		Name:            "Drew",
 		GithubUsername:  username,
-		Email:           "raphael@var-raphael.dev",
-		Country:         "Nigeria",
-		YearsExperience: 6,
+		Email:           "drew@example.com",
+		Country:         "Unknown",
+		YearsExperience: 3,
 	}
 
-	report := scoring.BuildReport("cand-test-001", "founding-fullstack-ai-001", info, job.Stack, result)
+	report := scoring.BuildReport("cand-test-004", "founding-fullstack-ai-001", info, job.Stack, result)
 
 	fmt.Fprintf(f, "Stack Match:       %.1f/10\n", report.Reasoning.Breakdown.StackMatch)
 	fmt.Fprintf(f, "Evidence Strength: %.1f/10\n", report.Reasoning.Breakdown.EvidenceStrength)
@@ -101,21 +76,6 @@ func main() {
 	pretty, _ := json.MarshalIndent(report.Reasoning, "", "  ")
 	fmt.Fprintln(f, string(pretty))
 
-	fmt.Fprintln(f, "\n=== OUTREACH DRAFT ===")
-	fmt.Println("Calling outreach.BuildDraft...")
-	job2 := models.Job{
-		Title:       job.Title,
-		Description: job.Description,
-		Stack:       job.Stack,
-	}
-	draft, err := outreach.BuildDraft(ctx, mistralClient, report, job2)
-	if err != nil {
-		fmt.Println("outreach.BuildDraft returned an error:", err)
-		fmt.Fprintf(f, "OUTREACH ERROR: %v\n", err)
-	} else {
-		fmt.Println("outreach.BuildDraft succeeded, subject:", draft.Subject)
-		fmt.Fprintf(f, "Subject: %s\n\n%s\n", draft.Subject, draft.Body)
-	}
 	if err := f.Sync(); err != nil {
 		fmt.Println("f.Sync error:", err)
 	}

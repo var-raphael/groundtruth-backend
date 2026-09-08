@@ -43,13 +43,18 @@ func ComputeFinalScore(topRepos []ranking.ScoredRepo, contributions []ghextracto
 	}
 }
 
-// contributionsScore log-scales each PR by the target repo's contributor count, sums, caps at 10 — no threshold gate, small repos still count, big ones count more.
+const minContributorsForRealContribution = 5
+
 func contributionsScore(contributions []ghextractor.RawContribution) float64 {
 	if len(contributions) == 0 {
 		return 0
 	}
+
 	var total float64
 	for _, c := range contributions {
+		if c.ContributorCount < minContributorsForRealContribution {
+			continue
+		}
 		total += math.Log10(float64(c.ContributorCount) + 1)
 	}
 	if total > 10 {

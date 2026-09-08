@@ -1,132 +1,28 @@
-Contributions found: 1
-- sourcebot-dev/sourcebot (59 contributors)
+Contributions found: 5 distinct repos
+- near/docs (287 contributors, 1 merged PRs by candidate)
+- sourcebot-dev/sourcebot (59 contributors, 7 merged PRs by candidate)
+- towns-protocol/towns (40 contributors, 1 merged PRs by candidate)
+- celo-org/celo-mondo (40 contributors, 1 merged PRs by candidate)
+- carlpett/terraform-provider-sops (24 contributors, 1 merged PRs by candidate)
 
-=== TOP-K LANGUAGE BREAKDOWN (debug) ===
-vexaro (total 394611 bytes):
-  Go                394047 bytes  (99.9%)  <-- COUNTS toward stack match for Go
-  Dockerfile           564 bytes  (0.1%)
-varsityline (total 64931 bytes):
-  TypeScript         63561 bytes  (97.9%)  <-- COUNTS toward stack match for TypeScript
-  CSS                  811 bytes  (1.2%)
-  JavaScript           559 bytes  (0.9%)
-diffboard (total 52691 bytes):
-  TypeScript         51321 bytes  (97.4%)  <-- COUNTS toward stack match for TypeScript
-  CSS                  811 bytes  (1.5%)
-  JavaScript           559 bytes  (1.1%)
-Gnat (total 303036 bytes):
-  Go                138362 bytes  (45.7%)  <-- COUNTS toward stack match for Go
-  JavaScript         59655 bytes  (19.7%)
-  HTML               57397 bytes  (18.9%)
-  CSS                47622 bytes  (15.7%)
-wildpalace-seo-plp (total 126590 bytes):
-  JavaScript          2169 bytes  (1.7%)
-  CSS                  867 bytes  (0.7%)
-  Dockerfile           259 bytes  (0.2%)
-  TypeScript        123295 bytes  (97.4%)  <-- COUNTS toward stack match for TypeScript
-quorel-python-sdk (total 33537 bytes):
-  Python             33537 bytes  (100.0%)  <-- COUNTS toward stack match for Python
-
-Stack Match:       10.0/10
-Evidence Strength: 6.1/10
-Contributions:     1.8/10
-LLM Judgment:      9.0/10
-FINAL SCORE:       7.8/10
+Stack Match:       0.0/10
+Evidence Strength: 0.0/10
+Contributions:     8.9/10
+LLM Judgment:      3.0/10
+FINAL SCORE:       2.1/10
 
 {
-  "score": 7.8,
+  "score": 2.1,
   "breakdown": {
-    "stackMatch": 10,
-    "evidenceStrength": 6.1,
-    "contributions": 1.8,
-    "llmJudgment": 9
+    "stackMatch": 0,
+    "evidenceStrength": 0,
+    "contributions": 8.9,
+    "llmJudgment": 3
   },
-  "stackMatch": "strong",
+  "stackMatch": "weak",
   "positiveReasons": [
     {
-      "point": "Owned a full-stack Go backend (Quorel) with versioned data extraction, API, and MCP integration, directly matching the job’s pipeline requirements.",
-      "evidence": [
-        {
-          "project": "vexaro",
-          "repoUrl": "https://github.com/var-raphael/vexaro",
-          "liveUrl": "https://quorel.vercel.app"
-        }
-      ]
-    },
-    {
-      "point": "Built a TypeScript/Next.js frontend (VarsityLine) with Supabase integration, demonstrating full-stack ownership and real deployment experience.",
-      "evidence": [
-        {
-          "project": "varsityline",
-          "repoUrl": "https://github.com/var-raphael/varsityline",
-          "liveUrl": "https://varsityline.vercel.app"
-        }
-      ]
-    },
-    {
-      "point": "Designed and implemented an MCP server in both Go (Quorel) and TypeScript (VarsityLine), a core requirement for AI agent integration.",
-      "evidence": [
-        {
-          "project": "vexaro",
-          "repoUrl": "https://github.com/var-raphael/vexaro",
-          "liveUrl": "https://quorel.vercel.app"
-        },
-        {
-          "project": "varsityline",
-          "repoUrl": "https://github.com/var-raphael/varsityline",
-          "liveUrl": "https://varsityline.vercel.app"
-        }
-      ]
-    },
-    {
-      "point": "Created a Python SDK (quorel-python-sdk) for the Go backend, showing cross-language API design and SDK development skills.",
-      "evidence": [
-        {
-          "project": "quorel-python-sdk",
-          "repoUrl": "https://github.com/var-raphael/quorel-python-sdk"
-        }
-      ]
-    },
-    {
-      "point": "Deployed and maintained live systems (Quorel, VarsityLine, Diffboard) with verified uptime, proving production-readiness.",
-      "evidence": [
-        {
-          "project": "vexaro",
-          "repoUrl": "https://github.com/var-raphael/vexaro",
-          "liveUrl": "https://quorel.vercel.app"
-        },
-        {
-          "project": "varsityline",
-          "repoUrl": "https://github.com/var-raphael/varsityline",
-          "liveUrl": "https://varsityline.vercel.app"
-        },
-        {
-          "project": "diffboard",
-          "repoUrl": "https://github.com/var-raphael/diffboard",
-          "liveUrl": "https://diffboard.vercel.app"
-        }
-      ]
-    },
-    {
-      "point": "Built a self-hosted analytics tool (Gnat) in Go with SQL support, event ingestion, and an MCP server, showcasing deep Go expertise.",
-      "evidence": [
-        {
-          "project": "Gnat",
-          "repoUrl": "https://github.com/var-raphael/Gnat"
-        }
-      ]
-    },
-    {
-      "point": "Demonstrated sustained, high-velocity development in Quorel (56 commits in 90 days) with a clear ownership pattern (e.g., backend refactoring, bug fixes, feature additions).",
-      "evidence": [
-        {
-          "project": "vexaro",
-          "repoUrl": "https://github.com/var-raphael/vexaro",
-          "liveUrl": "https://quorel.vercel.app"
-        }
-      ]
-    },
-    {
-      "point": "Contributed a merged PR to a high-star open-source project (sourcebot-dev/sourcebot), validating collaboration and code quality.",
+      "point": "Demonstrated ability to contribute to well-established open-source projects (e.g., sourcebot-dev/sourcebot with 7 merged PRs, 3930 stars), showing engagement with maintainers and codebases.",
       "evidence": [
         {
           "project": "sourcebot-dev/sourcebot",
@@ -135,50 +31,88 @@ FINAL SCORE:       7.8/10
       ]
     },
     {
-      "point": "Architected a Shopify app (Wild Palace) with AI-driven content generation, SEO, and multi-locale support, proving scalability and complexity handling.",
+      "point": "Consistent documentation contributions (e.g., near/docs, carlpett/terraform-provider-sops) suggest attention to detail and ability to improve project clarity.",
       "evidence": [
         {
-          "project": "wildpalace-seo-plp",
-          "repoUrl": "https://github.com/var-raphael/wildpalace-seo-plp"
+          "project": "near/docs",
+          "repoUrl": "https://github.com/near/docs"
+        },
+        {
+          "project": "carlpett/terraform-provider-sops",
+          "repoUrl": "https://github.com/carlpett/terraform-provider-sops"
         }
       ]
     },
     {
-      "point": "Used AI agents (MCP) for data management in multiple projects (Quorel, VarsityLine, Wild Palace), aligning with the job’s AI-focused verification layer.",
+      "point": "Merged PRs span multiple domains (config, DB parsing, validators, docs), indicating adaptability across technical areas.",
       "evidence": [
         {
-          "project": "vexaro",
-          "repoUrl": "https://github.com/var-raphael/vexaro",
-          "liveUrl": "https://quorel.vercel.app"
+          "project": "sourcebot-dev/sourcebot",
+          "repoUrl": "https://github.com/sourcebot-dev/sourcebot"
         },
         {
-          "project": "varsityline",
-          "repoUrl": "https://github.com/var-raphael/varsityline",
-          "liveUrl": "https://varsityline.vercel.app"
+          "project": "towns-protocol/towns",
+          "repoUrl": "https://github.com/towns-protocol/towns"
         },
         {
-          "project": "wildpalace-seo-plp",
-          "repoUrl": "https://github.com/var-raphael/wildpalace-seo-plp"
+          "project": "celo-org/celo-mondo",
+          "repoUrl": "https://github.com/celo-org/celo-mondo"
         }
       ]
     }
   ],
   "negativeReasons": [
     {
-      "point": "Python is present only in a single, small SDK repo (quorel-python-sdk) with minimal recent activity, not in the core full-stack work.",
+      "point": "No direct evidence of full-stack development (Go, TypeScript, or Python) in contributions; all PRs are either docs or minor config/DB changes.",
       "evidence": [
         {
-          "project": "quorel-python-sdk",
-          "repoUrl": "https://github.com/var-raphael/quorel-python-sdk"
+          "project": "near/docs",
+          "repoUrl": "https://github.com/near/docs"
+        },
+        {
+          "project": "sourcebot-dev/sourcebot",
+          "repoUrl": "https://github.com/sourcebot-dev/sourcebot"
+        },
+        {
+          "project": "towns-protocol/towns",
+          "repoUrl": "https://github.com/towns-protocol/towns"
+        },
+        {
+          "project": "celo-org/celo-mondo",
+          "repoUrl": "https://github.com/celo-org/celo-mondo"
+        },
+        {
+          "project": "carlpett/terraform-provider-sops",
+          "repoUrl": "https://github.com/carlpett/terraform-provider-sops"
         }
       ]
     },
     {
-      "point": "No evidence of Python in the primary Go/TypeScript projects (Quorel, VarsityLine, Gnat, Wild Palace), despite the README for Wild Palace claiming Python usage.",
+      "point": "No owned repos or sustained project ownership, limiting evidence of end-to-end pipeline experience (a core requirement for this role).",
+      "evidence": []
+    },
+    {
+      "point": "Contributions are sparse and lack recent sustained activity (most recent PR from 2026, but others from 2022–2025), raising questions about ongoing engagement.",
       "evidence": [
         {
-          "project": "wildpalace-seo-plp",
-          "repoUrl": "https://github.com/var-raphael/wildpalace-seo-plp"
+          "project": "near/docs",
+          "repoUrl": "https://github.com/near/docs"
+        },
+        {
+          "project": "sourcebot-dev/sourcebot",
+          "repoUrl": "https://github.com/sourcebot-dev/sourcebot"
+        },
+        {
+          "project": "towns-protocol/towns",
+          "repoUrl": "https://github.com/towns-protocol/towns"
+        },
+        {
+          "project": "celo-org/celo-mondo",
+          "repoUrl": "https://github.com/celo-org/celo-mondo"
+        },
+        {
+          "project": "carlpett/terraform-provider-sops",
+          "repoUrl": "https://github.com/carlpett/terraform-provider-sops"
         }
       ]
     }
@@ -187,12 +121,3 @@ FINAL SCORE:       7.8/10
 }
 
 === OUTREACH DRAFT ===
-Subject: Raphael, your work on Quorel caught my attention
-
-Hi Raphael,
-
-I was reviewing your work on Quorel and noticed how you built a full-stack Go backend with versioned data extraction and MCP integration. That’s exactly the kind of pipeline ownership we’re looking for in this role. The way you designed the MCP server in both Go and TypeScript also stood out—it’s a detail that matters when we’re talking about AI agent integration.
-
-If you’ve got a few minutes, I’d love to hear more about how you approached those challenges. No pressure to respond right away.
-
-Best,

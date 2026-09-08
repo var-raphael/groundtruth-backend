@@ -46,7 +46,7 @@ func ScoreCandidate(
 		contributions = nil
 	}
 
-	if len(topRepos) == 0 {
+	if len(topRepos) == 0 && len(contributions) == 0 {
 		return &Result{
 			Reasoning: &llm.ResolvedJobReasoning{
 				Score:      0,
@@ -55,7 +55,7 @@ func ScoreCandidate(
 			TopRepos:           nil,
 			Contributions:      contributions,
 			ContributionsError: contribErrMsg,
-			Warning:            "no owned repos survived filtering — insufficient evidence to score",
+			Warning:            "no owned repos or external contributions found — insufficient evidence to score",
 		}, nil
 	}
 
@@ -207,6 +207,7 @@ func convertContributions(contributions []ghextractor.RawContribution) []models.
 			PRTitle:          c.PRTitle,
 			PRUrl:            c.PRUrl,
 			MergedAt:         c.MergedAt,
+			MergedPRCount:    c.MergedPRCount,
 			ContributorCount: c.ContributorCount,
 			Stars:            c.Stars,
 		})
