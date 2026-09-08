@@ -7,20 +7,14 @@ import (
 	"github.com/google/go-github/v66/github"
 )
 
-// ForkStatus tells us whether a fork has real work on top of it, and
-// what upstream it's compared against — needed for ranking to decide
-// whether to treat this fork as one of the candidate's "own" repos.
 type ForkStatus struct {
-	IsFork          bool
-	ParentOwner     string
-	ParentRepo      string
-	CommitsAhead    int // candidate's commits not present in upstream
+	IsFork       bool
+	ParentOwner  string
+	ParentRepo   string
+	CommitsAhead int
+	LinesChanged int
 }
 
-// FetchForkStatus checks how many commits a fork is ahead of its parent.
-// Only meaningful to call on repos where RawRepo.IsFork is true — the
-// parent info comes from the repo's own metadata (GetRepo), and the ahead
-// count comes from GitHub's compare API, one extra call per fork.
 func FetchForkStatus(ctx context.Context, client *github.Client, owner, repo string) (*ForkStatus, error) {
 	full, _, err := client.Repositories.Get(ctx, owner, repo)
 	if err != nil {
@@ -44,10 +38,16 @@ func FetchForkStatus(ctx context.Context, client *github.Client, owner, repo str
 		return nil, fmt.Errorf("comparing %s/%s against parent: %w", owner, repo, err)
 	}
 
+	var linesChanged int
+	for _, f := range comparison.Files {
+		linesChanged += f.GetAdditions() + f.GetDeletions()
+	}
+
 	return &ForkStatus{
 		IsFork:       true,
 		ParentOwner:  parentOwner,
 		ParentRepo:   parentRepo,
 		CommitsAhead: comparison.GetAheadBy(),
+		LinesChanged: linesChanged,
 	}, nil
 }
