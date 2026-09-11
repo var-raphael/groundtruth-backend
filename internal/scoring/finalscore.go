@@ -44,23 +44,30 @@ func ComputeFinalScore(topRepos []ranking.ScoredRepo, contributions []ghextracto
 }
 
 const minContributorsForRealContribution = 5
+const contributionBaseScore = 6.0
 
 func contributionsScore(contributions []ghextractor.RawContribution) float64 {
-	if len(contributions) == 0 {
-		return 0
-	}
-
-	var total float64
+	maxContributors := 0
+	qualifying := 0
 	for _, c := range contributions {
 		if c.ContributorCount < minContributorsForRealContribution {
 			continue
 		}
-		total += math.Log10(float64(c.ContributorCount) + 1)
+		qualifying++
+		if c.ContributorCount > maxContributors {
+			maxContributors = c.ContributorCount
+		}
 	}
-	if total > 10 {
-		total = 10
+	if qualifying == 0 {
+		return 0
 	}
-	return total
+
+	bonus := math.Log10(float64(maxContributors)+1) - math.Log10(float64(minContributorsForRealContribution)+1)
+	score := contributionBaseScore + bonus
+	if score > 10 {
+		score = 10
+	}
+	return score
 }
 
 func combinedStackMatch(repos []ranking.ScoredRepo, jobStack []string) float64 {
