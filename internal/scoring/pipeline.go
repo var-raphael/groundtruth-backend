@@ -22,19 +22,31 @@ type Result struct {
 	ContributionsError string
 }
 
-func ScoreCandidate(
+// GithubEvidence holds everything gathered from GitHub for a candidate,
+// independent of any job — the expensive, per-candidate-token part of
+// scoring that has no shared rate limit and can run fully concurrently.
+type GithubEvidence struct {
+	TopRepos           []ranking.ScoredRepo
+	Contributions      []ghextractor.RawContribution
+	ContributionsError string
+}
+
+// ExtractGithubEvidence performs the GitHub-side extraction and ranking for
+// a candidate against a job's stack. Each candidate authenticates with
+// their own GitHub token, so this has no shared rate limit and callers may
+// run many of these concurrently.
+func ExtractGithubEvidence(
 	ctx context.Context,
 	githubClient *github.Client,
-	mistralClient *llm.Client,
 	username string,
-	job llm.JobContext,
-) (*Result, error) {
+	jobStack []string,
+) (*GithubEvidence, error) {
 	allRepos, err := ghextractor.FetchOwnedRepos(ctx, githubClient, username)
 	if err != nil {
 		return nil, fmt.Errorf("fetching repos for %s: %w", username, err)
 	}
 
-	topRepos, err := ranking.BuildTopRepos(ctx, githubClient, username, allRepos, job.Stack, 0)
+	topRepos, err := ranking.BuildTopRepos(ctx, githubClient, username, allRepos, jobStack, 0)
 	if err != nil {
 		return nil, fmt.Errorf("ranking repos for %s: %w", username, err)
 	}
@@ -46,20 +58,38 @@ func ScoreCandidate(
 		contributions = nil
 	}
 
-	if len(topRepos) == 0 && len(contributions) == 0 {
+	return &GithubEvidence{
+		TopRepos:           topRepos,
+		Contributions:      contributions,
+		ContributionsError: contribErrMsg,
+	}, nil
+}
+
+// ScoreWithEvidence runs the LLM scoring phase against already-extracted
+// GitHub evidence. Mistral is a shared resource, so callers should bound
+// concurrency for this phase (e.g. via a small worker pool), unlike
+// ExtractGithubEvidence which has no such constraint.
+func ScoreWithEvidence(
+	ctx context.Context,
+	mistralClient *llm.Client,
+	username string,
+	job llm.JobContext,
+	evidence *GithubEvidence,
+) (*Result, error) {
+	if len(evidence.TopRepos) == 0 && len(evidence.Contributions) == 0 {
 		return &Result{
 			Reasoning: &llm.ResolvedJobReasoning{
 				Score:      0,
 				StackMatch: "weak",
 			},
 			TopRepos:           nil,
-			Contributions:      contributions,
-			ContributionsError: contribErrMsg,
+			Contributions:      evidence.Contributions,
+			ContributionsError: evidence.ContributionsError,
 			Warning:            "no owned repos or external contributions found — insufficient evidence to score",
 		}, nil
 	}
 
-	userPrompt := llm.BuildUserPrompt(job, topRepos, contributions)
+	userPrompt := llm.BuildUserPrompt(job, evidence.TopRepos, evidence.Contributions)
 
 	const scoringTemperature = 0.0
 
@@ -75,23 +105,41 @@ func ScoreCandidate(
 
 	llm.EnforceReasonLimits(reasoning)
 
-	evidenceHadPadding := anyRepoFlaggedPadding(topRepos)
+	evidenceHadPadding := anyRepoFlaggedPadding(evidence.TopRepos)
 	ok, warning := llm.VerifyTrustFlagHonored(reasoning, evidenceHadPadding)
 	if !ok {
 		reasoning.HasTrustFlag = true
 	}
 
-	evidenceSources := buildRepoEvidenceSources(topRepos)
-	evidenceSources = append(evidenceSources, buildContributionEvidenceSources(contributions)...)
+	evidenceSources := buildRepoEvidenceSources(evidence.TopRepos)
+	evidenceSources = append(evidenceSources, buildContributionEvidenceSources(evidence.Contributions)...)
 	resolved := llm.ResolveEvidence(reasoning, evidenceSources)
 
 	return &Result{
 		Reasoning:          resolved,
-		TopRepos:           topRepos,
-		Contributions:      contributions,
-		ContributionsError: contribErrMsg,
+		TopRepos:           evidence.TopRepos,
+		Contributions:      evidence.Contributions,
+		ContributionsError: evidence.ContributionsError,
 		Warning:            warning,
 	}, nil
+}
+
+// ScoreCandidate runs both phases sequentially for a single candidate.
+// Kept for callers (like cmd/testrun) that don't need the two phases split
+// across separate concurrency pools — the worker uses ExtractGithubEvidence
+// and ScoreWithEvidence directly instead.
+func ScoreCandidate(
+	ctx context.Context,
+	githubClient *github.Client,
+	mistralClient *llm.Client,
+	username string,
+	job llm.JobContext,
+) (*Result, error) {
+	evidence, err := ExtractGithubEvidence(ctx, githubClient, username, job.Stack)
+	if err != nil {
+		return nil, err
+	}
+	return ScoreWithEvidence(ctx, mistralClient, username, job, evidence)
 }
 
 func buildRepoEvidenceSources(repos []ranking.ScoredRepo) []llm.RepoEvidenceSource {

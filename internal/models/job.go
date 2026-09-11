@@ -22,7 +22,9 @@ type Job struct {
 
 	MinYearsExperience int `json:"min_years_experience" db:"min_years_experience"`
 
-	// plan-driven, not user-set directly
+	Timezone        string `json:"timezone" db:"timezone"`
+	MinOverlapHours int    `json:"min_overlap_hours" db:"min_overlap_hours"`
+
 	CandidateLimit int `json:"candidate_limit" db:"candidate_limit"`
 
 	CreatedAt time.Time `json:"created_at" db:"created_at"`

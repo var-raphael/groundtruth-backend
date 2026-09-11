@@ -9,11 +9,13 @@ type Candidate struct {
 	FullName string `json:"full_name" db:"full_name"`
 	Email    string `json:"email" db:"email"`
 	Country  string `json:"country" db:"country"`
+	City     string `json:"city" db:"city"`
 	Timezone string `json:"timezone" db:"timezone"`
 
 	YearsExperience int `json:"years_experience" db:"years_experience"`
 
-	// GitHub identity — verified via Supabase OAuth, not free text
+	// GitHub identity — verified via GitHub OAuth, not free text
+	GithubID       int64  `json:"github_id" db:"github_id"`
 	GithubUsername string `json:"github_username" db:"github_username"`
 	GithubToken    string `json:"-" db:"github_token"` // encrypted at rest, never serialized out
 
@@ -21,7 +23,8 @@ type Candidate struct {
 	X         string `json:"x,omitempty" db:"x"`
 	Portfolio string `json:"portfolio,omitempty" db:"portfolio"`
 
-	Status CandidateStatus `json:"status" db:"status"`
+	Status          CandidateStatus `json:"status" db:"status"`
+	StatusUpdatedAt time.Time       `json:"status_updated_at" db:"status_updated_at"`
 
 	AppliedAt time.Time `json:"applied_at" db:"applied_at"`
 }
