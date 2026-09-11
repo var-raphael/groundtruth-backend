@@ -12,6 +12,16 @@ import (
 
 const defaultTopK = 6
 
+// shortlistMultiplier controls how many repos survive the cheap first pass
+// (no activity data) before we fetch real activity and do final selection.
+// Wider than defaultTopK on purpose: a repo that looks average on cheap
+// signals alone (stack, tree, liveness) but turns out to have strong
+// recent activity should still get a fair shot at making the final top-K
+// once activity is factored in — it just needs to survive this wider cut
+// first, which is a much lower bar than making the final list with zero
+// activity credit.
+const shortlistMultiplier = 3
+
 const minTreeFilesForSubstance = 5
 
 func hasSubstance(tree *ghextractor.TreeSummary) bool {
@@ -28,13 +38,14 @@ func BuildTopRepos(ctx context.Context, client *github.Client, username string, 
 		return nil, err
 	}
 
+	// First pass: score without activity data. Activity stats are the
+	// slowest signal to fetch (GitHub computes them asynchronously and can
+	// take several retries on repos nobody's queried recently), so we rank
+	// and select top-K using the cheaper signals first, then only pay the
+	// activity-fetch cost on the repos that actually survive selection —
+	// not on every owned repo, most of which get discarded anyway.
 	scored := make([]ScoredRepo, 0, len(kept))
 	for _, repo := range kept {
-		activity, actErr := ghextractor.FetchActivity(ctx, client, username, repo.Name)
-		if actErr != nil {
-			activity = nil
-		}
-
 		tree, treeErr := ghextractor.FetchTree(ctx, client, username, repo.Name, repo.DefaultBranch)
 		if treeErr != nil {
 			tree = nil
@@ -49,10 +60,7 @@ func BuildTopRepos(ctx context.Context, client *github.Client, username string, 
 			languages = nil
 		}
 
-		sr := ScoreRepo(repo, activity, tree, languages, jobStack)
-		if actErr != nil {
-			sr.ActivityError = actErr.Error()
-		}
+		sr := ScoreRepo(repo, nil, tree, languages, jobStack)
 		if treeErr != nil {
 			sr.TreeError = treeErr.Error()
 		}
@@ -62,6 +70,35 @@ func BuildTopRepos(ctx context.Context, client *github.Client, username string, 
 
 		scored = append(scored, sr)
 	}
+
+	sort.Slice(scored, func(i, j int) bool {
+		return scored[i].Score > scored[j].Score
+	})
+
+	shortlistSize := topK * shortlistMultiplier
+	if len(scored) > shortlistSize {
+		scored = selectTopK(scored, jobStack, shortlistSize)
+	}
+
+	// Second pass: fetch real activity for the shortlist (not every owned
+	// repo) concurrently, then fold it into each repo's score. Concurrent
+	// since each repo's activity fetch (with its own retry-on-202 wait) is
+	// independent, and running them sequentially is what made cold, many-
+	// repo accounts slow before this change.
+	var activityWG sync.WaitGroup
+	for i := range scored {
+		activityWG.Add(1)
+		go func(i int) {
+			defer activityWG.Done()
+			activity, actErr := ghextractor.FetchActivity(ctx, client, username, scored[i].Repo.Name)
+			if actErr != nil {
+				scored[i].ActivityError = actErr.Error()
+				return
+			}
+			scored[i] = ScoreRepo(scored[i].Repo, activity, scored[i].Tree, scored[i].Languages, jobStack)
+		}(i)
+	}
+	activityWG.Wait()
 
 	sort.Slice(scored, func(i, j int) bool {
 		return scored[i].Score > scored[j].Score

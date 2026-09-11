@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/google/go-github/v66/github"
 )
@@ -26,24 +28,47 @@ type ActivitySummary struct {
 	SuspiciousPadding bool
 }
 
+const (
+	activityStatsMaxRetries = 3
+	activityStatsRetryWait  = 2 * time.Second
+)
+
 // FetchActivity pulls the 52-week commit activity for a repo and reduces it
 // to the last ~13 weeks (roughly 90 days) for recency/frequency scoring.
 //
-// Note: GitHub computes these stats async on first request for a repo that
-// hasn't been queried recently — a 202 response means "come back shortly,"
-// not an error. Caller should treat a 202 as "no data yet" rather than fail.
+// GitHub computes these stats asynchronously on first request for a repo
+// that hasn't been queried recently — a 202 response means "still
+// computing, try again shortly," not "zero activity." Returning zeros for
+// a 202 would silently misrepresent a candidate's real activity as
+// nonexistent, so this retries a few times with a short wait before giving
+// up and returning empty data.
 func FetchActivity(ctx context.Context, client *github.Client, owner, repo string) (*ActivitySummary, error) {
-	weeks, _, err := client.Repositories.ListCommitActivity(ctx, owner, repo)
-	if err != nil {
-		// go-github surfaces GitHub's 202 ("stats still being computed on
-		// their side") as an *AcceptedError, not as a normal HTTP status we
-		// can inspect on the response — check for it explicitly rather than
-		// treating it as a real failure. Worker should retry this repo later.
+	var weeks []*github.WeeklyCommitActivity
+
+	for attempt := 0; attempt <= activityStatsMaxRetries; attempt++ {
+		result, _, err := client.Repositories.ListCommitActivity(ctx, owner, repo)
+		if err == nil {
+			weeks = result
+			break
+		}
+
 		var accepted *github.AcceptedError
-		if errors.As(err, &accepted) {
+		if !errors.As(err, &accepted) {
+			return nil, fmt.Errorf("fetching commit activity for %s/%s: %w", owner, repo, err)
+		}
+
+		if attempt == activityStatsMaxRetries {
+			log.Printf("activity: %s/%s stats still not ready after %d retries, returning empty", owner, repo, activityStatsMaxRetries)
 			return &ActivitySummary{}, nil
 		}
-		return nil, fmt.Errorf("fetching commit activity for %s/%s: %w", owner, repo, err)
+
+		log.Printf("activity: %s/%s stats not ready (202), retrying in %s (attempt %d/%d)", owner, repo, activityStatsRetryWait, attempt+1, activityStatsMaxRetries)
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(activityStatsRetryWait):
+		}
 	}
 
 	last13 := weeks
