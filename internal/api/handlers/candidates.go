@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/var-raphael/groundtruth/internal/api/middleware"
@@ -18,6 +19,74 @@ type CandidatesHandler struct {
 type candidateResponse struct {
 	models.Candidate
 	OverlapHours int `json:"overlap_hours"`
+}
+
+type listReportsResponse struct {
+	Reports    []models.CandidateReport `json:"reports"`
+	Page       int                      `json:"page"`
+	PageSize   int                      `json:"pageSize"`
+	Total      int                      `json:"total"`
+	TotalPages int                      `json:"totalPages"`
+}
+
+const defaultReportsPageSize = 20
+const maxReportsPageSize = 100
+
+func (h *CandidatesHandler) ListReports(w http.ResponseWriter, r *http.Request) {
+	recruiterID, ok := middleware.RecruiterIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	jobID := r.PathValue("id")
+
+	job, err := queries.GetJob(r.Context(), h.Pool, jobID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if job == nil {
+		http.Error(w, "job not found", http.StatusNotFound)
+		return
+	}
+	if job.RecruiterID != recruiterID {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	page := 1
+	if v := r.URL.Query().Get("page"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	pageSize := defaultReportsPageSize
+	if v := r.URL.Query().Get("pageSize"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 && parsed <= maxReportsPageSize {
+			pageSize = parsed
+		}
+	}
+
+	reports, total, err := queries.ListReportsByJob(r.Context(), h.Pool, jobID, pageSize, (page-1)*pageSize)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	totalPages := (total + pageSize - 1) / pageSize
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(listReportsResponse{
+		Reports:    reports,
+		Page:       page,
+		PageSize:   pageSize,
+		Total:      total,
+		TotalPages: totalPages,
+	})
 }
 
 func (h *CandidatesHandler) ListCandidates(w http.ResponseWriter, r *http.Request) {

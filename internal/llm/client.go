@@ -21,6 +21,7 @@ const requestTimeout = 60 * time.Second
 const maxRetries = 4
 const baseBackoff = 2 * time.Second
 const maxBackoff = 30 * time.Second
+const maxCompletionTokens = 4000
 
 func isRetryableStatus(code int) bool {
 	return code >= 500 && code < 600
@@ -67,6 +68,7 @@ type chatRequest struct {
 	Messages       []chatMessage `json:"messages"`
 	ResponseFormat *responseFmt  `json:"response_format,omitempty"`
 	Temperature    float64       `json:"temperature"`
+	MaxTokens      int           `json:"max_tokens,omitempty"`
 }
 
 type responseFmt struct {
@@ -91,6 +93,7 @@ func (c *Client) CompleteJSON(ctx context.Context, systemPrompt, userPrompt stri
 		},
 		ResponseFormat: &responseFmt{Type: "json_object"},
 		Temperature:    temperature,
+		MaxTokens:      maxCompletionTokens,
 	}
 
 	bodyBytes, err := json.Marshal(reqBody)

@@ -3,6 +3,7 @@ package scoring
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/go-github/v66/github"
@@ -22,19 +23,12 @@ type Result struct {
 	ContributionsError string
 }
 
-// GithubEvidence holds everything gathered from GitHub for a candidate,
-// independent of any job — the expensive, per-candidate-token part of
-// scoring that has no shared rate limit and can run fully concurrently.
 type GithubEvidence struct {
 	TopRepos           []ranking.ScoredRepo
 	Contributions      []ghextractor.RawContribution
 	ContributionsError string
 }
 
-// ExtractGithubEvidence performs the GitHub-side extraction and ranking for
-// a candidate against a job's stack. Each candidate authenticates with
-// their own GitHub token, so this has no shared rate limit and callers may
-// run many of these concurrently.
 func ExtractGithubEvidence(
 	ctx context.Context,
 	githubClient *github.Client,
@@ -65,10 +59,6 @@ func ExtractGithubEvidence(
 	}, nil
 }
 
-// ScoreWithEvidence runs the LLM scoring phase against already-extracted
-// GitHub evidence. Mistral is a shared resource, so callers should bound
-// concurrency for this phase (e.g. via a small worker pool), unlike
-// ExtractGithubEvidence which has no such constraint.
 func ScoreWithEvidence(
 	ctx context.Context,
 	mistralClient *llm.Client,
@@ -92,28 +82,47 @@ func ScoreWithEvidence(
 	userPrompt := llm.BuildUserPrompt(job, evidence.TopRepos, evidence.Contributions)
 
 	const scoringTemperature = 0.0
+	const maxParseRetries = 2
 
-	rawResponse, err := mistralClient.CompleteJSON(ctx, llm.SystemPrompt(), userPrompt, scoringTemperature)
-	if err != nil {
-		return nil, fmt.Errorf("scoring %s via LLM: %w", username, err)
+	var reasoning *llm.JobReasoning
+	var lastParseErr error
+	var rawResponse string
+
+	for attempt := 0; attempt <= maxParseRetries; attempt++ {
+		resp, err := mistralClient.CompleteJSON(ctx, llm.SystemPrompt(), userPrompt, scoringTemperature)
+		if err != nil {
+			return nil, fmt.Errorf("scoring %s via LLM: %w", username, err)
+		}
+		rawResponse = resp
+
+		parsed, parseErr := llm.ParseJobReasoning(rawResponse)
+		if parseErr == nil {
+			reasoning = parsed
+			break
+		}
+
+		lastParseErr = parseErr
+		log.Printf("scoring %s: LLM returned malformed JSON (attempt %d/%d): %v", username, attempt+1, maxParseRetries+1, parseErr)
 	}
 
-	reasoning, err := llm.ParseJobReasoning(rawResponse)
-	if err != nil {
-		return nil, fmt.Errorf("parsing LLM response for %s: %w (raw: %s)", username, err, truncate(rawResponse, 500))
+	if reasoning == nil {
+		return nil, fmt.Errorf("parsing LLM response for %s after %d attempts: %w (raw: %s)", username, maxParseRetries+1, lastParseErr, truncate(rawResponse, 500))
 	}
 
 	llm.EnforceReasonLimits(reasoning)
 
-	evidenceHadPadding := anyRepoFlaggedPadding(evidence.TopRepos)
-	ok, warning := llm.VerifyTrustFlagHonored(reasoning, evidenceHadPadding)
+	evidenceWarrantedFlag := anyRepoFlaggedPadding(evidence.TopRepos) || anyRepoFlaggedJunkOrEnv(evidence.TopRepos)
+	ok, warning := llm.VerifyTrustFlagHonored(reasoning, evidenceWarrantedFlag)
 	if !ok {
 		reasoning.HasTrustFlag = true
 	}
 
 	evidenceSources := buildRepoEvidenceSources(evidence.TopRepos)
 	evidenceSources = append(evidenceSources, buildContributionEvidenceSources(evidence.Contributions)...)
-	resolved := llm.ResolveEvidence(reasoning, evidenceSources)
+	resolved, unresolvedEvidence := llm.ResolveEvidence(reasoning, evidenceSources)
+	if len(unresolvedEvidence) > 0 {
+		log.Printf("scoring %s: LLM cited evidence names that don't match any real repo/contribution: %v", username, unresolvedEvidence)
+	}
 
 	return &Result{
 		Reasoning:          resolved,
@@ -124,10 +133,6 @@ func ScoreWithEvidence(
 	}, nil
 }
 
-// ScoreCandidate runs both phases sequentially for a single candidate.
-// Kept for callers (like cmd/testrun) that don't need the two phases split
-// across separate concurrency pools — the worker uses ExtractGithubEvidence
-// and ScoreWithEvidence directly instead.
 func ScoreCandidate(
 	ctx context.Context,
 	githubClient *github.Client,
@@ -177,6 +182,15 @@ func anyRepoFlaggedPadding(repos []ranking.ScoredRepo) bool {
 	return false
 }
 
+func anyRepoFlaggedJunkOrEnv(repos []ranking.ScoredRepo) bool {
+	for _, r := range repos {
+		if r.Tree != nil && r.Tree.Junk.HasIssue() {
+			return true
+		}
+	}
+	return false
+}
+
 func truncate(s string, max int) string {
 	if len(s) <= max {
 		return s
@@ -184,27 +198,17 @@ func truncate(s string, max int) string {
 	return s[:max] + "..."
 }
 
-type CandidateInfo struct {
-	ID              string
-	Name            string
-	GithubUsername  string
-	Email           string
-	Country         string
-	YearsExperience int
-	LinkedIn        string
-	X               string
-	Portfolio       string
-}
-
-func BuildReport(candidateID, jobID string, info CandidateInfo, jobStack []string, result *Result) *models.CandidateReport {
+func BuildReport(candidateID, jobID string, jobStack []string, result *Result) *models.EvidenceReport {
 	evidence := make([]models.RepoEvidenceSummary, 0, len(result.TopRepos))
 	for _, r := range result.TopRepos {
 		summary := models.RepoEvidenceSummary{
-			Name:        r.Repo.Name,
-			Description: r.Repo.Description,
-			RepoURL:     r.Repo.RepoURL,
-			Languages:   languagePercentages(r.Languages),
-			Score:       r.Score,
+			Name:               r.Repo.Name,
+			Description:        r.Repo.Description,
+			RepoURL:            r.Repo.RepoURL,
+			Languages:          languagePercentages(r.Languages),
+			DetectedStack:      r.DetectedStack,
+			DetectedStackError: r.DetectedStackError,
+			Score:              r.Score,
 		}
 		if r.Activity != nil {
 			summary.Commits90d = r.Activity.TotalCommits90d
@@ -214,6 +218,8 @@ func BuildReport(candidateID, jobID string, info CandidateInfo, jobStack []strin
 		if r.Tree != nil {
 			summary.HasReadme = r.Tree.HasReadme
 			summary.ReadmeTrunced = r.Tree.ReadmeTrunced
+			summary.JunkDirs = r.Tree.Junk.JunkDirs
+			summary.EnvFilesPushed = r.Tree.Junk.EnvFiles
 		}
 		if r.Liveness != nil {
 			summary.IsLive = r.Liveness.IsLive
@@ -224,20 +230,10 @@ func BuildReport(candidateID, jobID string, info CandidateInfo, jobStack []strin
 		evidence = append(evidence, summary)
 	}
 
-	return &models.CandidateReport{
-		CandidateID: candidateID,
-		JobID:       jobID,
-		GeneratedAt: time.Now(),
-		Candidate: models.CandidateSummary{
-			Name:            info.Name,
-			GithubUsername:  info.GithubUsername,
-			Email:           info.Email,
-			Country:         info.Country,
-			YearsExperience: info.YearsExperience,
-			LinkedIn:        info.LinkedIn,
-			X:               info.X,
-			Portfolio:       info.Portfolio,
-		},
+	return &models.EvidenceReport{
+		CandidateID:   candidateID,
+		JobID:         jobID,
+		GeneratedAt:   time.Now(),
 		Evidence:      evidence,
 		Contributions: convertContributions(result.Contributions),
 		Reasoning:     convertReasoning(result.Reasoning, result.TopRepos, result.Contributions, jobStack),
@@ -270,15 +266,29 @@ func convertReasoning(r *llm.ResolvedJobReasoning, topRepos []ranking.ScoredRepo
 		Score: breakdown.Final,
 		Breakdown: models.ScoreBreakdownSummary{
 			StackMatch:       breakdown.StackMatch,
+			StackCoverage:    convertStackCoverage(breakdown.StackCoverage),
 			EvidenceStrength: breakdown.EvidenceStrength,
 			Contributions:    breakdown.Contributions,
 			LLMJudgment:      breakdown.LLMJudgment,
 		},
-		StackMatch:      r.StackMatch,
+		StackMatch:      breakdown.StackMatchLabel,
 		PositiveReasons: convertReasons(r.PositiveReasons),
 		NegativeReasons: convertReasons(r.NegativeReasons),
 		HasTrustFlag:    r.HasTrustFlag,
 	}
+}
+
+func convertStackCoverage(items []StackCoverageItem) []models.StackCoverageSummary {
+	out := make([]models.StackCoverageSummary, 0, len(items))
+	for _, item := range items {
+		out = append(out, models.StackCoverageSummary{
+			Technology: item.Technology,
+			Percentage: item.Percentage,
+			RepoCount:  item.RepoCount,
+			Repos:      item.Repos,
+		})
+	}
+	return out
 }
 
 func convertReasons(reasons []llm.ResolvedReason) []models.ReasonSummary {

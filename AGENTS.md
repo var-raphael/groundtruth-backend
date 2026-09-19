@@ -2,6 +2,8 @@
 
 AI-powered technical hiring verification tool. Given a job (title, description, required stack) and a candidate's GitHub username, it produces a 0-10 score with a written breakdown of real, verified evidence — real repos, real commit history, real language breakdowns, real liveness checks on claimed deployments, real merged PRs — not self-reported claims.
 
+**START HERE:** there is a major, fully-designed-but-not-yet-built pipeline reorder waiting — see "MAJOR PENDING WORK: Pipeline reorder" further down this file. It supersedes some of the "Stack detection" section's current tradeoffs. Read that section before touching `topk.go`, `score.go`, or `finalscore.go`.
+
 ## Core philosophy
 
 - **Mechanical scoring and LLM judgment are kept separate, and deliberately not double-counted.** Stack Match, Evidence Strength, and Contributions are all computed by plain Go code from verified GitHub data. LLM Judgment is Mistral's own qualitative read. The final score is a weighted average of all four.
@@ -67,6 +69,68 @@ Minimal `net/http` handler wiring `outreach.BuildDraft` to an HTTP endpoint. **N
 - `cmd/api/main.go` — 0 bytes.
 - `internal/api/handlers/{apply,candidates,jobs,auth}.go` — 0 bytes.
 - `internal/api/middleware/{auth,ratelimit}.go` — 0 bytes.
+
+## Stack detection (DetectedStack)
+
+Stack matching no longer uses raw GitHub language bytes. `ScoredRepo` has a new `DetectedStack []string` field, populated per-repo by combining language byte breakdown + real dependency manifest contents (fetched via GitHub, parsed via `github.com/git-pkgs/manifests`) into one LLM call. This catches frameworks/databases byte proportions can't (e.g. Next.js, Postgres) that plain language detection missed.
+
+- `internal/extractor/github/manifest.go` — `FindManifestPaths` (uses `manifests.Identify` on tree paths, no hardcoded filename list), `FetchManifestFiles` (fetches content via `Repositories.GetContents`, capped at 8 files/20KB each), `FormatManifestFiles`.
+- `internal/llm/stackprompt.go` — system/user prompt for the combined detection call.
+- `internal/llm/schema.go` — added `DetectedStack` type + `ParseDetectedStack`.
+- `internal/ranking/score.go` — added `DetectedStack`/`DetectedStackError` fields, `DetectedStackMatchScore`, `RescoreWithDetectedStack`. The old byte-based `stackMatchScore` is unchanged and still used for `topk.go`'s cheap first-pass selection only.
+- `internal/scoring/detectstack.go` — `ApplyDetectedStack`, runs the fetch+LLM step per repo.
+- `internal/scoring/finalscore.go` — `languageCoveredAcross` now checks `DetectedStack`, not byte proportions.
+- `internal/worker/scan.go` — `runScoring` calls `ApplyDetectedStack` before `ScoreWithEvidence`, so it runs inside the Mistral-concurrency-capped phase, not the uncapped GitHub extraction phase (one LLM call per repo, must stay capped).
+
+`Languages` (raw bytes) is untouched everywhere else — report display, judgment prompt context, phase-one repo selection.
+
+`go.mod` needs `github.com/git-pkgs/manifests v0.12.0` — run `go mod tidy`.
+
+**Fixed this session:** `DetectedStack` was being computed and shown in the report's evidence JSON, but never actually included in the scoring LLM's prompt (`prompt.go`'s `BuildUserPrompt`) — so the LLM was reasoning about stack presence from language bytes and repo descriptions alone, occasionally producing prose that contradicted the mechanical `DetectedStackMatchScore` in the same report (e.g. claiming a repo had a "Next.js-like frontend" when `DetectedStack` showed nothing of the sort). Fixed by adding a "Verified stack" line per repo in the prompt (sourced from `sr.DetectedStack`) plus a hard system-prompt rule: `DetectedStack` is the sole authority on tech presence, description/README claims never override it, no "-like" hedging language allowed. Confirmed fixed via re-running var-raphael against a Next.js/Go/Postgres job — negative reasons now correctly and consistently state "no evidence of Next.js" instead of contradicting themselves.
+
+Not yet done: `topk.go`'s `selectTopK`/`repoCoversLanguage` still seat repos using byte-based matching, not `DetectedStack` — a deliberate tradeoff to keep the uncapped extraction phase free of LLM calls.
+
+**SUPERSEDED by the pipeline reorder below.** This tradeoff is exactly what caused the bug that motivated the reorder: byte-based pre-selection ran before `DetectedStack` existed, so real-but-non-byte-detectable stack items (Next.js, Postgres) could get a repo excluded from top-K before manifest detection ever got a chance to prove it belonged. Confirmed via `var-raphael`: his `varsityline` and `vexaro`-frontend repos are genuinely Next.js projects, but got excluded from top-K before `DetectedStack` ran, so the LLM correctly (and confidently) reported "no evidence of Next.js" — technically true given what it was shown, but wrong given what's actually on his GitHub. The fix is not a patch, it's a full pipeline reorder — see next section.
+
+## MAJOR PENDING WORK: Pipeline reorder (designed this session, not yet built)
+
+This is the next thing to build. Full design agreed with the user, reasoning intact below — implement faithfully, don't just wing the shape from memory.
+
+### The core problem being solved
+
+Stack relevance was being decided **before** the system actually knew a repo's real stack. `selectTopK` picks repos using raw language bytes (cheap, no LLM call) specifically to avoid running `DetectedStack`'s LLM-backed manifest detection on every repo. But this means: a repo whose real stack relevance can only be proven via manifest data (Next.js via `package.json`'s `next` dependency, Postgres via `pgx`/`lib/pq` imports, Django via `requirements.txt`) can get excluded from consideration before that proof ever happens. The fix isn't a smarter guess at selection time — it's re-ordering so detection happens before relevance is judged at all.
+
+### The new pipeline order, agreed and final
+
+1. **Substance filter (stack-blind).** Same kind of thing `hasSubstance`/tree-file-count checks already do — just confirm a repo is real, non-trivial work. No stack matching, no language checks at this stage at all.
+2. **Fraud/trust check (stack-blind).** Existing suspicious-padding detection (uniform commit timing), fork-vs-owned verification (`CommitsAhead`/`LinesChanged` thresholds), liveness checks on claimed URLs. Still no stack awareness needed here — this stage is purely "is this evidence trustworthy," independent of what job it's being evaluated against.
+3. **Stack detection, now run on every repo that survived steps 1-2** (not a narrow pre-guessed shortlist). Sort survivors by substance/trust-quality first if a cap is still needed for cost control — the user confirmed the added LLM-call cost across more repos is acceptable ("it's a small token anyway"), so lean toward running detection broadly rather than aggressively pre-narrowing.
+4. **Stack matching against the job**, using real `DetectedStack` data (not byte guesses). Drop any repo that doesn't hit at least one required job-stack item. This is the first point where "does this repo belong in this report" gets decided, and it's now based on ground truth.
+5. **Survivors go to the LLM for scoring**, exactly as today, with one prompt addition (see "Repo dates" below).
+6. **Per-stack-language percentage breakdown**, computed across all final surviving repos (see "Per-language breakdown" below) — this becomes much simpler to build correctly now that the repo set going into it has already been genuinely verified as stack-relevant, not a mix of real matches and guessed filler.
+
+### Recency: removed as a mechanical score, kept as a narrative fact
+
+Long discussion, final decision: **an old repo is not inherently worse evidence than a new one, if it's still substantive and trustworthy.** The current `ScoreRepo` formula's recency component (`MaxRecencyScore`, currently 25 of 100 points, decaying by 120-day half-life since `PushedAt`) get removed. Reasoning, in the user's own framing: a candidate who's shown strong Go usage across 3 years (2023-2026) across 4 repos is arguably a *stronger* signal than someone whose only Go evidence is one repo pushed last week — the current formula would score the fresher, thinner evidence higher, which is backwards.
+
+**What replaces it:** nothing mechanical for multi-repo span — the LLM infers this itself from real per-repo dates already being shown to it. This requires adding a repo's **creation date**, not just `PushedAt` (last-push date), to the prompt — `CreatedAt` does not currently exist anywhere in `RawRepo`/`ScoredRepo`, needs to be fetched (standard GitHub repo API field, likely available in the same call that already fetches `PushedAt`, just not currently captured) and threaded through. With both dates present per repo, the LLM can naturally reason "used consistently 2023-2026" the same way it already synthesizes other multi-fact observations — no separate span-computation code needed, this was explicitly simplified out during design once the user pointed out the dates alone are sufficient raw material.
+
+**What's kept, with reduced/different mechanical weight:** *current* engagement — i.e., `commits90d`/`activeWeeks90d`, "is this person still actively building right now" — is a genuinely different question from "how long ago was this repo last touched," and the user explicitly wants this to keep some real mechanical score weight, separate from the old last-push-date decay. The old `MaxRecencyScore` points need to be redistributed across the remaining components (stack match, current-activity, tree quality, liveness) once the formula is rebuilt — exact redistribution not yet decided, needs fresh design work, don't assume equal split.
+
+### Per-language stack percentage breakdown (still not built, but now sequenced correctly)
+
+From an earlier session: user wants an absolute (not relative-to-candidate) percentage per job-stack language, e.g. "Go 100% across 3 repos, Python 60% across 2 repos" — lets a recruiter filter/prioritize by a specific language even when the candidate's blended overall score is mediocre due to some other required language they're weak in. Decided absolute over relative specifically so the same percentage means the same thing across different candidates (needed for fair filtering/comparison).
+
+This is now sequenced *after* the pipeline reorder above, deliberately — computing this cleanly depends on already having a correctly-verified, non-filler set of surviving repos per language. Formula still not designed — likely reuses per-repo signal types similar to `ScoreRepo` (tree quality, liveness, current-activity) but scoped per-language rather than per-repo, weighting each language's contribution within a repo by that language's byte-percentage inside it. Needs real design work before code, same as before — don't invent a formula in the moment.
+
+### Files this reorder will touch, once built
+
+- `internal/ranking/topk.go` — `selectTopK`, `BuildTopRepos`, the whole selection-order needs restructuring around the new stage order.
+- `internal/ranking/score.go` — remove `MaxRecencyScore`/recency-decay math, add `CreatedAt` to `ScoredRepo`, redesign point redistribution.
+- `internal/extractor/github/repos.go` — fetch and populate `CreatedAt` on `RawRepo`.
+- `internal/scoring/finalscore.go` — formula changes following score.go's redistribution.
+- `internal/scoring/detectstack.go` — likely needs to run against a wider set of repos than before (post substance+fraud filter, pre-stack-match), not the narrow shortlist it may currently assume.
+- `internal/llm/prompt.go` — add `CreatedAt` alongside the existing `PushedAt` line in the per-repo prompt block.
 
 ## Known, deliberately deferred gaps
 

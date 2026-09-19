@@ -19,10 +19,13 @@ type ScoredRepo struct {
 	Score           float64
 	StackMatchScore float64
 
-	ActivityError  string `json:"ActivityError,omitempty"`
-	TreeError      string `json:"TreeError,omitempty"`
-	LanguagesError string `json:"LanguagesError,omitempty"`
-	CommitsError   string `json:"CommitsError,omitempty"`
+	DetectedStack []string
+
+	ActivityError      string `json:"ActivityError,omitempty"`
+	TreeError          string `json:"TreeError,omitempty"`
+	LanguagesError     string `json:"LanguagesError,omitempty"`
+	CommitsError       string `json:"CommitsError,omitempty"`
+	DetectedStackError string `json:"DetectedStackError,omitempty"`
 }
 
 const MaxPossibleScore = 100.0
@@ -36,6 +39,8 @@ const MaxActivityScore = 20.0
 const MaxLivenessScore = 10.0
 const MaxTreeQualityScore = 5.0
 
+const noHomepageLivenessCredit = 3.0
+
 func (s ScoredRepo) NonStackScore() float64 {
 	raw := s.Score - s.StackMatchScore
 	ceiling := s.nonStackCeiling()
@@ -47,7 +52,7 @@ func (s ScoredRepo) NonStackScore() float64 {
 
 func (s ScoredRepo) nonStackCeiling() float64 {
 	if strings.TrimSpace(s.Repo.HomepageURL) == "" {
-		return MaxNonStackScore - MaxLivenessScore
+		return MaxNonStackScore - (MaxLivenessScore - noHomepageLivenessCredit)
 	}
 	return MaxNonStackScore
 }
@@ -108,6 +113,34 @@ func stackMatchScore(languages ghextractor.LanguageBreakdown, jobStack []string)
 	return ratio * stackMatchWeight
 }
 
+func DetectedStackMatchScore(detectedStack []string, jobStack []string) float64 {
+	if len(jobStack) == 0 || len(detectedStack) == 0 {
+		return 0
+	}
+
+	matched := 0
+	for _, want := range jobStack {
+		for _, have := range detectedStack {
+			if StackNamesMatch(have, want) {
+				matched++
+				break
+			}
+		}
+	}
+
+	ratio := float64(matched) / float64(len(jobStack))
+	const stackMatchWeight = 40.0
+	return ratio * stackMatchWeight
+}
+
+func (s ScoredRepo) RescoreWithDetectedStack(jobStack []string) ScoredRepo {
+	nonStack := s.Score - s.StackMatchScore
+	newStackScore := DetectedStackMatchScore(s.DetectedStack, jobStack)
+	s.StackMatchScore = newStackScore
+	s.Score = nonStack + newStackScore
+	return s
+}
+
 func recencyScore(pushedAt string) float64 {
 	t, err := time.Parse("2006-01-02 15:04:05 -0700 MST", pushedAt)
 	if err != nil {
@@ -135,7 +168,7 @@ func activityScore(activity *ghextractor.ActivitySummary) float64 {
 	}
 
 	const activityWeight = 20.0
-	const commitCap = 100.0
+	const commitCap = 45.0
 
 	commits := float64(activity.TotalCommits90d)
 	if commits > commitCap {
@@ -153,9 +186,10 @@ func activityScore(activity *ghextractor.ActivitySummary) float64 {
 func livenessScore(homepageURL string, liveness *ghextractor.LivenessCheck) float64 {
 	const livenessWeight = 10.0
 	const unverifiedClaimCredit = 3.0
+	const deadLinkCredit = 2.0
 
 	if strings.TrimSpace(homepageURL) == "" {
-		return 0
+		return noHomepageLivenessCredit
 	}
 	if liveness == nil {
 		return unverifiedClaimCredit
@@ -163,7 +197,7 @@ func livenessScore(homepageURL string, liveness *ghextractor.LivenessCheck) floa
 	if liveness.IsLive {
 		return livenessWeight
 	}
-	return 0
+	return deadLinkCredit
 }
 
 func treeQualityScore(tree *ghextractor.TreeSummary) float64 {
@@ -173,7 +207,7 @@ func treeQualityScore(tree *ghextractor.TreeSummary) float64 {
 	const maxWeight = 5.0
 	const fileCountCap = 30.0
 
-	files := float64(len(tree.Paths))
+	files := float64(ghextractor.CountNonJunkFiles(tree.Paths, tree.Junk.JunkDirs))
 	if files > fileCountCap {
 		files = fileCountCap
 	}

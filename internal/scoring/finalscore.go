@@ -2,18 +2,26 @@ package scoring
 
 import (
 	"math"
-	"strings"
 
 	ghextractor "github.com/var-raphael/groundtruth/internal/extractor/github"
 	"github.com/var-raphael/groundtruth/internal/ranking"
 )
 
+type StackCoverageItem struct {
+	Technology string   `json:"technology"`
+	Percentage float64  `json:"percentage"`
+	RepoCount  int      `json:"repoCount"`
+	Repos      []string `json:"repos"`
+}
+
 type FinalScoreBreakdown struct {
-	StackMatch       float64 `json:"stackMatch"`
-	EvidenceStrength float64 `json:"evidenceStrength"`
-	Contributions    float64 `json:"contributions"`
-	LLMJudgment      float64 `json:"llmJudgment"`
-	Final            float64 `json:"final"`
+	StackMatch       float64             `json:"stackMatch"`
+	StackMatchLabel  string              `json:"stackMatchLabel"`
+	StackCoverage    []StackCoverageItem `json:"stackCoverage"`
+	EvidenceStrength float64             `json:"evidenceStrength"`
+	Contributions    float64             `json:"contributions"`
+	LLMJudgment      float64             `json:"llmJudgment"`
+	Final            float64             `json:"final"`
 }
 
 const (
@@ -36,6 +44,8 @@ func ComputeFinalScore(topRepos []ranking.ScoredRepo, contributions []ghextracto
 
 	return FinalScoreBreakdown{
 		StackMatch:       round1(stackMatch),
+		StackMatchLabel:  stackMatchLabel(stackMatch),
+		StackCoverage:    computeStackCoverage(topRepos, jobStack),
 		EvidenceStrength: round1(evidenceStrength),
 		Contributions:    round1(contribScore),
 		LLMJudgment:      round1(llmJudgment),
@@ -46,9 +56,14 @@ func ComputeFinalScore(topRepos []ranking.ScoredRepo, contributions []ghextracto
 const minContributorsForRealContribution = 5
 const contributionBaseScore = 6.0
 
+const substantialContributionMinContributors = 20
+const substantialContributionMinStars = 100
+const substantialContributionCountForMaxScore = 3
+
 func contributionsScore(contributions []ghextractor.RawContribution) float64 {
 	maxContributors := 0
 	qualifying := 0
+	substantial := 0
 	for _, c := range contributions {
 		if c.ContributorCount < minContributorsForRealContribution {
 			continue
@@ -57,9 +72,15 @@ func contributionsScore(contributions []ghextractor.RawContribution) float64 {
 		if c.ContributorCount > maxContributors {
 			maxContributors = c.ContributorCount
 		}
+		if c.ContributorCount >= substantialContributionMinContributors && c.Stars >= substantialContributionMinStars {
+			substantial++
+		}
 	}
 	if qualifying == 0 {
 		return 0
+	}
+	if substantial >= substantialContributionCountForMaxScore {
+		return 10
 	}
 
 	bonus := math.Log10(float64(maxContributors)+1) - math.Log10(float64(minContributorsForRealContribution)+1)
@@ -86,47 +107,77 @@ func combinedStackMatch(repos []ranking.ScoredRepo, jobStack []string) float64 {
 	return ratio * 10.0
 }
 
-const strongLanguagePresence = 0.40
-const minTreeFilesForStackMatch = 8
+func stackMatchLabel(stackMatch float64) string {
+	if stackMatch >= 10.0 {
+		return "strong"
+	}
+	if stackMatch > 0 {
+		return "partial"
+	}
+	return "weak"
+}
 
 func languageCoveredAcross(lang string, repos []ranking.ScoredRepo) bool {
 	for _, r := range repos {
-		if r.Languages == nil {
-			continue
-		}
-		if r.Tree == nil || len(r.Tree.Paths) < minTreeFilesForStackMatch {
-			continue
-		}
-		var totalBytes int
-		for _, bytes := range r.Languages {
-			totalBytes += bytes
-		}
-		if totalBytes == 0 {
-			continue
-		}
-		for reportedLang, bytes := range r.Languages {
-			if !strings.EqualFold(reportedLang, lang) {
-				continue
-			}
-			proportion := float64(bytes) / float64(totalBytes)
-			if proportion >= strongLanguagePresence {
+		for _, detected := range r.DetectedStack {
+			if ranking.StackNamesMatch(detected, lang) {
 				return true
 			}
 		}
 	}
+	return false
+}
 
+func computeStackCoverage(repos []ranking.ScoredRepo, jobStack []string) []StackCoverageItem {
+	if len(jobStack) == 0 || len(repos) == 0 {
+		return nil
+	}
+
+	items := make([]StackCoverageItem, 0, len(jobStack))
+	for _, tech := range jobStack {
+		var matchingRepos []string
+		for _, r := range repos {
+			if repoUsesTechnology(r, tech) {
+				matchingRepos = append(matchingRepos, r.Repo.Name)
+			}
+		}
+
+		percentage := (float64(len(matchingRepos)) / float64(len(repos))) * 100.0
+
+		items = append(items, StackCoverageItem{
+			Technology: tech,
+			Percentage: round1(percentage),
+			RepoCount:  len(matchingRepos),
+			Repos:      matchingRepos,
+		})
+	}
+
+	return items
+}
+
+func repoUsesTechnology(r ranking.ScoredRepo, tech string) bool {
+	for _, detected := range r.DetectedStack {
+		if ranking.StackNamesMatch(detected, tech) {
+			return true
+		}
+	}
 	return false
 }
 
 func normalizedAverageEvidenceStrength(repos []ranking.ScoredRepo) float64 {
-	if len(repos) == 0 {
+	var total float64
+	var relevant int
+	for _, r := range repos {
+		if r.StackMatchScore <= 0 {
+			continue
+		}
+		total += r.NonStackScore()
+		relevant++
+	}
+	if relevant == 0 {
 		return 0
 	}
-	var total float64
-	for _, r := range repos {
-		total += r.NonStackScore()
-	}
-	avg := total / float64(len(repos))
+	avg := total / float64(relevant)
 	return (avg / ranking.MaxNonStackScore) * 10.0
 }
 

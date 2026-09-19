@@ -7,12 +7,17 @@ import (
 	"github.com/google/go-github/v66/github"
 )
 
-// TreeSummary is the raw shape of a repo's file structure. Deliberately
-// unopinionated — no "is this a real project" judgment happens here. Every
-// path is handed over as-is, flat, and whatever mechanical rules or LLM
-// judgment we build later decides what it means.
+// TreeSummary is the raw shape of a repo's file structure. Paths contains
+// only real files (blob entries) — directory entries from the GitHub tree
+// API are excluded here, since they never appear in a commit's changed-file
+// list and would corrupt any file-count-based signal downstream. Deliberately
+// unopinionated beyond that — no "is this a real project" judgment happens
+// here. Junk is a separate, explicit signal (see JunkSignals), not baked
+// into Paths itself.
 type TreeSummary struct {
-	Paths []string // every file and directory path in the repo, flat
+	Paths []string // every real file path in the repo, flat
+
+	Junk JunkSignals
 
 	HasReadme     bool
 	ReadmeText    string // README content, truncated to readmeMaxChars if longer
@@ -29,20 +34,27 @@ type TreeSummary struct {
 const readmeMaxChars = 8000
 
 // FetchTree pulls a repo's full file tree (paths only, no blob contents —
-// cheap, one request) plus the README's actual text. No filtering, no
-// derived booleans — evaluation of what this tree "means" happens later,
-// either by the LLM or a separate mechanical pass, not here.
+// cheap, one request) plus the README's actual text and junk/env signals
+// derived from that same tree response, no extra API call.
 func FetchTree(ctx context.Context, client *github.Client, owner, repo, defaultBranch string) (*TreeSummary, error) {
 	tree, _, err := client.Git.GetTree(ctx, owner, repo, defaultBranch, true)
 	if err != nil {
 		return nil, fmt.Errorf("fetching tree for %s/%s: %w", owner, repo, err)
 	}
 
-	summary := &TreeSummary{
-		Paths: make([]string, 0, len(tree.Entries)),
-	}
+	allPaths := make([]string, 0, len(tree.Entries))
+	paths := make([]string, 0, len(tree.Entries))
 	for _, entry := range tree.Entries {
-		summary.Paths = append(summary.Paths, entry.GetPath())
+		p := entry.GetPath()
+		allPaths = append(allPaths, p)
+		if entry.GetType() == "blob" {
+			paths = append(paths, p)
+		}
+	}
+
+	summary := &TreeSummary{
+		Paths: paths,
+		Junk:  DetectJunk(allPaths, paths),
 	}
 
 	readme, _, err := client.Repositories.GetReadme(ctx, owner, repo, nil)

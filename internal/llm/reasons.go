@@ -30,9 +30,9 @@ func stripMarkdown(s string) string {
 	return s
 }
 
-func VerifyTrustFlagHonored(reasoning *JobReasoning, evidenceHadPadding bool) (ok bool, warning string) {
-	if evidenceHadPadding && !reasoning.HasTrustFlag {
-		return false, "evidence showed suspicious commit padding but the model did not set has_trust_flag — this response should not be trusted as-is, consider re-running or flagging for manual review"
+func VerifyTrustFlagHonored(reasoning *JobReasoning, evidenceWarrantedFlag bool) (ok bool, warning string) {
+	if evidenceWarrantedFlag && !reasoning.HasTrustFlag {
+		return false, "evidence showed a trust concern (commit padding, junk directories, or a pushed .env file) but the model did not set has_trust_flag — this response should not be trusted as-is, consider re-running or flagging for manual review"
 	}
 	return true, ""
 }
@@ -43,11 +43,13 @@ type RepoEvidenceSource struct {
 	LiveURL string
 }
 
-func ResolveEvidence(reasoning *JobReasoning, repoSources []RepoEvidenceSource) *ResolvedJobReasoning {
+func ResolveEvidence(reasoning *JobReasoning, repoSources []RepoEvidenceSource) (*ResolvedJobReasoning, []string) {
 	byName := make(map[string]RepoEvidenceSource, len(repoSources))
 	for _, r := range repoSources {
 		byName[r.Name] = r
 	}
+
+	var unresolved []string
 
 	resolve := func(reasons []Reason) []ResolvedReason {
 		resolved := make([]ResolvedReason, 0, len(reasons))
@@ -56,6 +58,7 @@ func ResolveEvidence(reasoning *JobReasoning, repoSources []RepoEvidenceSource) 
 			for _, name := range r.Evidence {
 				src, found := byName[name]
 				if !found {
+					unresolved = append(unresolved, name)
 					links = append(links, EvidenceLink{Project: name})
 					continue
 				}
@@ -70,11 +73,14 @@ func ResolveEvidence(reasoning *JobReasoning, repoSources []RepoEvidenceSource) 
 		return resolved
 	}
 
+	positives := resolve(reasoning.PositiveReasons)
+	negatives := resolve(reasoning.NegativeReasons)
+
 	return &ResolvedJobReasoning{
 		Score:           reasoning.Score,
 		StackMatch:      reasoning.StackMatch,
-		PositiveReasons: resolve(reasoning.PositiveReasons),
-		NegativeReasons: resolve(reasoning.NegativeReasons),
+		PositiveReasons: positives,
+		NegativeReasons: negatives,
 		HasTrustFlag:    reasoning.HasTrustFlag,
-	}
+	}, unresolved
 }

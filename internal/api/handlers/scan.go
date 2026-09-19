@@ -17,14 +17,14 @@ type ScanHandler struct {
 	MistralClients []*llm.Client
 }
 
-// TriggerScan kicks off a worker.Scan run in the background and returns
-// immediately. There's no job queue/scheduler yet, so this is a manual
-// trigger; a real deployment would run Scan on a timer instead. The scan
-// runs against context.Background(), not the request's context, since the
-// request context is cancelled as soon as this handler returns.
 func (h *ScanHandler) TriggerScan(w http.ResponseWriter, r *http.Request) {
+	opts := worker.ScanOptions{
+		Force:       r.URL.Query().Get("force") == "true",
+		CandidateID: r.URL.Query().Get("candidate_id"),
+	}
+
 	go func() {
-		if err := worker.Scan(context.Background(), h.Pool, h.GithubClient, h.MistralClients); err != nil {
+		if err := worker.Scan(context.Background(), h.Pool, h.GithubClient, h.MistralClients, opts); err != nil {
 			log.Printf("scan failed: %v", err)
 		}
 	}()

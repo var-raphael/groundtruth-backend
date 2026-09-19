@@ -65,3 +65,39 @@ func ParseJobReasoning(raw string) (*JobReasoning, error) {
 	}
 	return &result, nil
 }
+
+// DetectedStack is the parsed result of one repo's combined language-bytes
+// + manifest-contents stack detection call. This is the single source of
+// truth for what technologies a repo actually uses — it supersedes raw
+// LanguageBreakdown for stack-matching purposes specifically, since it can
+// see frameworks and databases that byte proportions alone cannot.
+type DetectedStack struct {
+	Stack []string `json:"stack"`
+}
+
+// ParseDetectedStack parses the raw JSON string returned by CompleteJSON
+// for a stack-detection call into a DetectedStack.
+func ParseDetectedStack(raw string) (*DetectedStack, error) {
+	var result DetectedStack
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+type DetectedStackBatchEntry struct {
+	Name  string   `json:"name"`
+	Stack []string `json:"stack"`
+}
+
+type DetectedStackBatch struct {
+	Repos []DetectedStackBatchEntry `json:"repos"`
+}
+
+func ParseDetectedStackBatch(raw string) (*DetectedStackBatch, error) {
+	var result DetectedStackBatch
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}

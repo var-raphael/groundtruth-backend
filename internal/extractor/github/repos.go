@@ -7,8 +7,6 @@ import (
 	"github.com/google/go-github/v66/github"
 )
 
-// RawRepo is the trimmed-down shape we actually care about from GitHub's
-// repo list response, before any filtering/ranking happens.
 type RawRepo struct {
 	Name          string
 	Description   string
@@ -22,10 +20,8 @@ type RawRepo struct {
 	DefaultBranch string // needed to fetch the tree (tree.go) against the right branch
 }
 
-// FetchOwnedRepos pulls every repo owned by username, sorted by most
-// recently pushed. Empty repos are dropped here since there's nothing to
-// evaluate; real fork-vs-original-work filtering happens in ranking/filter.go,
-// not here — this stays a dumb fetch-and-shape step.
+const maxReposToConsider = 100
+
 func FetchOwnedRepos(ctx context.Context, client *github.Client, username string) ([]RawRepo, error) {
 	opts := &github.RepositoryListByUserOptions{
 		Sort: "pushed",
@@ -57,6 +53,9 @@ func FetchOwnedRepos(ctx context.Context, client *github.Client, username string
 				Size:          r.GetSize(),
 				DefaultBranch: r.GetDefaultBranch(),
 			})
+			if len(all) >= maxReposToConsider {
+				return all, nil
+			}
 		}
 
 		if resp.NextPage == 0 {

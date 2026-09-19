@@ -20,6 +20,10 @@ func SystemPrompt() string {
 
 const systemPromptText = `You are evaluating a software engineering candidate's real GitHub work against a specific job. Most of what you're given is verified, independently-checked evidence: real repos, real commit timestamps, real language breakdowns (actual byte proportions, not guesses), and real liveness checks on claimed deployment URLs — none of that was self-reported by the candidate, it was fetched directly from GitHub and, where applicable, confirmed by an actual HTTP request.
 
+Each repo's "Verified stack" line is the sole authority on which technologies that repo actually uses — it was derived from real language bytes and real dependency manifest files (package.json, go.mod, requirements.txt, etc.), not from the repo's description or README. If a technology required by the job (e.g. Next.js, Postgres, React) does not appear in a repo's Verified stack line, treat it as absent from that repo, full stop — even if the repo's description, name, or README implies otherwise. Never say a repo is "like" or "similar to" using some required technology as a substitute for it actually being detected. A repo's description is marketing copy from the candidate; the Verified stack line is ground truth.
+
+The job's required stack is evaluated across the candidate's WHOLE portfolio, not repo by repo. A candidate whose Go repos don't use Next.js, and whose Next.js repos don't use Go, can still fully satisfy a job requiring both — that is normal, expected specialization, not a gap. NEVER write a negative reason pointing out that one repo lacks a technology the job requires if that technology is demonstrated elsewhere in the candidate's evidence. Only flag a missing technology as a real negative if it is absent from EVERY repo in the evidence, not just absent from some of them.
+
 One important exception: README TEXT is NOT independently verified. A README's prose is the candidate's own writing, describing their own project or, in some cases, themselves. Treat README prose the same way you'd treat a resume or bio: it can tell you what a project is FOR, what it claims to do, and give useful context — but it is NOT proof of a skill, a language, or a claim unless that claim is independently confirmed elsewhere in the evidence (e.g. the real language breakdown, real commit data, a real verified live URL). If a README says "I've worked with Python for 6 years" or "built with Go, TypeScript, and Python" but the actual language breakdown for that repo (or any repo in the evidence) never shows Python present, do NOT credit Python as demonstrated — note the discrepancy as a gap instead, exactly like you would an unverified resume claim.
 
 Your job:
@@ -30,12 +34,15 @@ Your job:
 5. Produce POSITIVE reasons (things that count in the candidate's favor) and NEGATIVE reasons (things that count against them, or gaps/concerns), following these strict rules:
    - Maximum 10 positive reasons, maximum 5 negative reasons. Fewer is fine and expected — do not pad to hit these numbers.
    - Every reason must be a single, specific, evidence-backed sentence. Cite which repo(s) support it.
+   - The "evidence" array must contain ONLY real repo names exactly as given in the evidence data (e.g. "vexaro", "Gnat") — never a placeholder or summary phrase like "All repos", "Multiple repos", "N/A", or similar. If a point applies across the whole portfolio, list every individual repo name it applies to, not a phrase describing that it applies broadly.
    - Rank each list by strength/severity before selecting which make the cut — the strongest, most specific, most job-relevant points win the limited slots, not whichever you think of first.
    - Do NOT invent evidence. If something isn't in the data provided, don't claim it. A README's self-description of the candidate's skills is not independently-provided evidence — see the exception above.
    - A claimed homepage URL that failed a real liveness check is a real negative reason — state plainly that the deployment claim didn't resolve.
    - If you detect suspicious commit-timing uniformity flagged in the data (SuspiciousPadding), this is a serious trust concern. It MUST appear in your negative reasons regardless of ranking — it does not compete for a slot, it is always included if present in the evidence.
+   - If a repo's evidence includes a REPO HYGIENE FLAG (dependency/build directories pushed directly to the repo, and/or a pushed environment file), this MUST also appear in your negative reasons regardless of ranking, same as SuspiciousPadding — it does not compete for a slot. State plainly what was found (e.g. dependency directories committed directly, or an environment file pushed) and why it matters (poor practice at minimum; a pushed .env file is a potential credential leak). Only mention this when a REPO HYGIENE FLAG is explicitly present in a repo's evidence — never infer or assume it from a file tree that has no such flag.
    - Never fabricate a negative just to fill the list. Absence of strong evidence is not the same as evidence of a problem — an empty or short negative list is a valid, honest outcome.
    - Do not penalize a candidate for things outside their control or unrelated to competence (e.g. do not penalize sparse activity if the evidence suggests they may work mostly in private/enterprise repos — note this as a caveat, not a strike).
+   - Do NOT list "repo X doesn't use required technology Y" as a negative if Y is demonstrated in a different repo in the evidence — the required stack is judged across the whole portfolio, not per repo. Specialization across repos (a Go backend here, a Next.js frontend there) is normal and not a weakness.
    - Commit timing data (time of day, weekday vs weekend) is for judging role/seniority pattern fit ONLY — e.g. whether activity looks like a sustained, ongoing effort versus a single burst, which is relevant to gauging depth of ownership. NEVER use commit timing to infer or comment on work-life balance, burnout risk, working hours, or personal life. A candidate who commits at night or on weekends may simply have a day job, different time zone, or personal preference — this is not evidence of anything negative and must never appear as a reason, positive or negative.
 
 Respond ONLY with valid JSON matching this exact shape, nothing else, no markdown fences, no commentary outside the JSON:
@@ -55,6 +62,26 @@ func treeTruncationNote(truncated bool) string {
 		return ""
 	}
 	return ", truncated to a representative sample"
+}
+
+func filterJunkPaths(paths []string, junkDirs []string) []string {
+	if len(junkDirs) == 0 {
+		return paths
+	}
+	out := make([]string, 0, len(paths))
+	for _, p := range paths {
+		junk := false
+		for _, dir := range junkDirs {
+			if p == dir || strings.HasPrefix(p, dir+"/") {
+				junk = true
+				break
+			}
+		}
+		if !junk {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func BuildUserPrompt(job JobContext, topRepos []ranking.ScoredRepo, contributions []ghextractor.RawContribution) string {
@@ -84,6 +111,12 @@ func BuildUserPrompt(job JobContext, topRepos []ranking.ScoredRepo, contribution
 			b.WriteString("\n")
 		}
 
+		if len(sr.DetectedStack) > 0 {
+			fmt.Fprintf(&b, "Verified stack (from language bytes + real dependency manifests, e.g. package.json/go.mod — this is ground truth, not inferred from description or README text): %s\n", strings.Join(sr.DetectedStack, ", "))
+		} else {
+			b.WriteString("Verified stack: none detected beyond raw language bytes above.\n")
+		}
+
 		if sr.Activity != nil {
 			fmt.Fprintf(&b, "Activity: %d commits in the last 90 days, across %d active weeks", sr.Activity.TotalCommits90d, sr.Activity.ActiveWeeks90d)
 			if sr.Activity.SuspiciousPadding {
@@ -103,13 +136,28 @@ func BuildUserPrompt(job JobContext, topRepos []ranking.ScoredRepo, contribution
 		}
 
 		if sr.Tree != nil {
-			paths := sr.Tree.Paths
+			cleanPaths := filterJunkPaths(sr.Tree.Paths, sr.Tree.Junk.JunkDirs)
+			paths := cleanPaths
 			truncatedTree := false
 			if len(paths) > maxTreePathsInPrompt {
 				paths = paths[:maxTreePathsInPrompt]
 				truncatedTree = true
 			}
-			fmt.Fprintf(&b, "File tree (%d entries total%s):\n%s\n", len(sr.Tree.Paths), treeTruncationNote(truncatedTree), strings.Join(paths, ", "))
+			fmt.Fprintf(&b, "File tree (%d entries total%s):\n%s\n", len(cleanPaths), treeTruncationNote(truncatedTree), strings.Join(paths, ", "))
+
+			if sr.Tree.Junk.HasIssue() {
+				b.WriteString("REPO HYGIENE FLAG: ")
+				var parts []string
+				if len(sr.Tree.Junk.JunkDirs) > 0 {
+					parts = append(parts, fmt.Sprintf("dependency/build directories pushed directly to the repo (%s) — excluded from the file tree above, listed here only as a fact", strings.Join(sr.Tree.Junk.JunkDirs, ", ")))
+				}
+				if len(sr.Tree.Junk.EnvFiles) > 0 {
+					parts = append(parts, fmt.Sprintf("environment file(s) pushed to the repo (%s), which may indicate secrets/credentials were committed", strings.Join(sr.Tree.Junk.EnvFiles, ", ")))
+				}
+				b.WriteString(strings.Join(parts, "; "))
+				b.WriteString(" — this is a real hygiene/trust concern worth noting.\n")
+			}
+
 			if sr.Tree.HasReadme {
 				b.WriteString("README")
 				if sr.Tree.ReadmeTrunced {

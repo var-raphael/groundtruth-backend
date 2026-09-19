@@ -12,52 +12,50 @@ import (
 
 const defaultTopK = 6
 
-// shortlistMultiplier controls how many repos survive the cheap first pass
-// (no activity data) before we fetch real activity and do final selection.
-// Wider than defaultTopK on purpose: a repo that looks average on cheap
-// signals alone (stack, tree, liveness) but turns out to have strong
-// recent activity should still get a fair shot at making the final top-K
-// once activity is factored in — it just needs to survive this wider cut
-// first, which is a much lower bar than making the final list with zero
-// activity credit.
-const shortlistMultiplier = 3
-
 const minTreeFilesForSubstance = 5
+
+const maxConcurrentGithubCalls = 10
+
+func runBounded(n int, fn func(i int)) {
+	sem := make(chan struct{}, maxConcurrentGithubCalls)
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(i int) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			fn(i)
+		}(i)
+	}
+	wg.Wait()
+}
 
 func hasSubstance(tree *ghextractor.TreeSummary) bool {
 	return tree != nil && len(tree.Paths) >= minTreeFilesForSubstance
 }
 
 func BuildTopRepos(ctx context.Context, client *github.Client, username string, allRepos []ghextractor.RawRepo, jobStack []string, topK int) ([]ScoredRepo, error) {
-	if topK <= 0 {
-		topK = defaultTopK
-	}
-
 	kept, err := FilterOwnedRepos(ctx, client, username, allRepos)
 	if err != nil {
 		return nil, err
 	}
 
-	// First pass: score without activity data. Activity stats are the
-	// slowest signal to fetch (GitHub computes them asynchronously and can
-	// take several retries on repos nobody's queried recently), so we rank
-	// and select top-K using the cheaper signals first, then only pay the
-	// activity-fetch cost on the repos that actually survive selection —
-	// not on every owned repo, most of which get discarded anyway.
-	scored := make([]ScoredRepo, 0, len(kept))
-	for _, repo := range kept {
+	prelim := make([]ScoredRepo, len(kept))
+	runBounded(len(kept), func(i int) {
+		repo := kept[i]
 		tree, treeErr := ghextractor.FetchTree(ctx, client, username, repo.Name, repo.DefaultBranch)
 		if treeErr != nil {
 			tree = nil
 		}
 
-		if !hasSubstance(tree) {
-			continue
-		}
-
-		languages, langErr := ghextractor.FetchLanguages(ctx, client, username, repo.Name)
-		if langErr != nil {
-			languages = nil
+		var languages ghextractor.LanguageBreakdown
+		var langErr error
+		if hasSubstance(tree) {
+			languages, langErr = ghextractor.FetchLanguages(ctx, client, username, repo.Name)
+			if langErr != nil {
+				languages = nil
+			}
 		}
 
 		sr := ScoreRepo(repo, nil, tree, languages, jobStack)
@@ -67,77 +65,70 @@ func BuildTopRepos(ctx context.Context, client *github.Client, username string, 
 		if langErr != nil {
 			sr.LanguagesError = langErr.Error()
 		}
+		prelim[i] = sr
+	})
 
+	scored := make([]ScoredRepo, 0, len(prelim))
+	for _, sr := range prelim {
+		if !hasSubstance(sr.Tree) {
+			continue
+		}
 		scored = append(scored, sr)
 	}
 
-	sort.Slice(scored, func(i, j int) bool {
-		return scored[i].Score > scored[j].Score
-	})
-
-	shortlistSize := topK * shortlistMultiplier
-	if len(scored) > shortlistSize {
-		scored = selectTopK(scored, jobStack, shortlistSize)
-	}
-
-	// Second pass: fetch real activity for the shortlist (not every owned
-	// repo) concurrently, then fold it into each repo's score. Concurrent
-	// since each repo's activity fetch (with its own retry-on-202 wait) is
-	// independent, and running them sequentially is what made cold, many-
-	// repo accounts slow before this change.
-	var activityWG sync.WaitGroup
-	for i := range scored {
-		activityWG.Add(1)
-		go func(i int) {
-			defer activityWG.Done()
-			activity, actErr := ghextractor.FetchActivity(ctx, client, username, scored[i].Repo.Name)
-			if actErr != nil {
-				scored[i].ActivityError = actErr.Error()
-				return
-			}
-			scored[i] = ScoreRepo(scored[i].Repo, activity, scored[i].Tree, scored[i].Languages, jobStack)
-		}(i)
-	}
-	activityWG.Wait()
-
-	sort.Slice(scored, func(i, j int) bool {
-		return scored[i].Score > scored[j].Score
-	})
-
-	if len(scored) > topK {
-		scored = selectTopK(scored, jobStack, topK)
-	}
-
-	var wg sync.WaitGroup
-	for i := range scored {
-		url := scored[i].Repo.HomepageURL
-		if strings.TrimSpace(url) == "" {
-			continue
+	runBounded(len(scored), func(i int) {
+		activity, actErr := ghextractor.FetchActivity(ctx, client, username, scored[i].Repo.Name)
+		if actErr != nil {
+			scored[i].ActivityError = actErr.Error()
+			return
 		}
-		wg.Add(1)
-		go func(i int, url string) {
-			defer wg.Done()
-			check := ghextractor.CheckLiveness(ctx, url)
-			scored[i].Liveness = &check
-			scored[i].Score = scored[i].Score - firstPassLivenessCredit(url) + livenessScore(url, &check)
-		}(i, url)
-	}
-	wg.Wait()
+		scored[i] = ScoreRepo(scored[i].Repo, activity, scored[i].Tree, scored[i].Languages, jobStack)
+	})
 
+	livenessIndices := make([]int, 0, len(scored))
 	for i := range scored {
+		if strings.TrimSpace(scored[i].Repo.HomepageURL) != "" {
+			livenessIndices = append(livenessIndices, i)
+		}
+	}
+	runBounded(len(livenessIndices), func(j int) {
+		i := livenessIndices[j]
+		url := scored[i].Repo.HomepageURL
+		check := ghextractor.CheckLiveness(ctx, url)
+		scored[i].Liveness = &check
+		scored[i].Score = scored[i].Score - firstPassLivenessCredit(url) + livenessScore(url, &check)
+	})
+
+	runBounded(len(scored), func(i int) {
 		timings, err := ghextractor.FetchRecentCommitTimings(ctx, client, username, scored[i].Repo.Name, 0)
 		if err != nil {
 			scored[i].CommitsError = err.Error()
-			continue
+			return
 		}
 		scored[i].Commits = timings
-	}
+	})
 
 	sort.Slice(scored, func(i, j int) bool {
 		return scored[i].Score > scored[j].Score
 	})
 
 	return scored, nil
+}
+
+func SelectVerifiedTopRepos(scored []ScoredRepo, jobStack []string, topK int) []ScoredRepo {
+	if topK <= 0 {
+		topK = defaultTopK
+	}
+	if len(scored) <= topK {
+		var verified []ScoredRepo
+		for _, sr := range scored {
+			if sr.StackMatchScore > 0 {
+				verified = append(verified, sr)
+			}
+		}
+		return verified
+	}
+	return selectTopK(scored, jobStack, topK)
 }
 
 func selectTopK(scored []ScoredRepo, jobStack []string, topK int) []ScoredRepo {
@@ -164,18 +155,57 @@ func selectTopK(scored []ScoredRepo, jobStack []string, topK int) []ScoredRepo {
 		}
 	}
 
-	if len(selected) < topK {
-		for i := range scored {
+	for len(selected) < topK {
+		pickedThisRound := false
+		for _, lang := range jobStack {
 			if len(selected) >= topK {
 				break
 			}
+			best := -1
+			for i := range scored {
+				if selected[i] {
+					continue
+				}
+				if !repoCoversLanguage(scored[i], lang) {
+					continue
+				}
+				if best == -1 || scored[i].Score > scored[best].Score {
+					best = i
+				}
+			}
+			if best != -1 {
+				selected[best] = true
+				pickedThisRound = true
+			}
+		}
+		if !pickedThisRound {
+			break
+		}
+	}
+
+	if len(selected) < topK {
+		type candidate struct {
+			index int
+			score float64
+		}
+		var remaining []candidate
+		for i := range scored {
 			if selected[i] {
 				continue
 			}
-			if !hasRealSubstanceForFiller(scored[i]) {
+			if scored[i].StackMatchScore <= 0 {
 				continue
 			}
-			selected[i] = true
+			remaining = append(remaining, candidate{index: i, score: scored[i].Score})
+		}
+		sort.Slice(remaining, func(i, j int) bool {
+			return remaining[i].score > remaining[j].score
+		})
+		for _, c := range remaining {
+			if len(selected) >= topK {
+				break
+			}
+			selected[c.index] = true
 		}
 	}
 
@@ -188,36 +218,11 @@ func selectTopK(scored []ScoredRepo, jobStack []string, topK int) []ScoredRepo {
 	return out
 }
 
-const minTreeFilesForFiller = 8
-
-func hasRealSubstanceForFiller(sr ScoredRepo) bool {
-	if sr.Tree == nil || len(sr.Tree.Paths) < minTreeFilesForFiller {
-		return false
-	}
-	if len(sr.Languages) < 2 {
-		return false
-	}
-	return true
-}
-
 func repoCoversLanguage(sr ScoredRepo, lang string) bool {
-	if len(sr.Languages) == 0 {
-		return false
-	}
-	var totalBytes int
-	for _, bytes := range sr.Languages {
-		totalBytes += bytes
-	}
-	if totalBytes == 0 {
-		return false
-	}
-	const presenceFloor = 0.03
-	for reportedLang, bytes := range sr.Languages {
-		if !strings.EqualFold(reportedLang, lang) {
-			continue
+	for _, have := range sr.DetectedStack {
+		if StackNamesMatch(have, lang) {
+			return true
 		}
-		proportion := float64(bytes) / float64(totalBytes)
-		return proportion >= presenceFloor
 	}
 	return false
 }

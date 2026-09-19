@@ -102,10 +102,10 @@ func (h *ApplyHandler) Apply(w http.ResponseWriter, r *http.Request) {
 		YearsExperience: req.YearsExperience,
 		GithubID:        req.GithubID,
 		GithubUsername:  req.GithubUsername,
-		GithubToken:     req.GithubToken,
-		LinkedIn:        req.LinkedIn,
-		X:               req.X,
-		Portfolio:       req.Portfolio,
+		GithubToken:     nullableString(req.GithubToken),
+		LinkedIn:        nullableString(req.LinkedIn),
+		X:               nullableString(req.X),
+		Portfolio:       nullableString(req.Portfolio),
 		Status:          models.StatusQueued,
 	}
 
@@ -118,4 +118,11 @@ func (h *ApplyHandler) Apply(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(created)
+}
+
+func nullableString(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

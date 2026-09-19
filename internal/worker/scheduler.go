@@ -40,7 +40,7 @@ func StartScheduler(ctx context.Context, interval time.Duration, pool *pgxpool.P
 						log.Printf("scheduler: reset %d stale candidate(s) stuck in scoring back to queued", reset)
 					}
 
-					if err := Scan(ctx, pool, githubClient, mistralClients); err != nil {
+					if err := Scan(ctx, pool, githubClient, mistralClients, ScanOptions{}); err != nil {
 						log.Printf("scheduler: scan failed: %v", err)
 					}
 				}()

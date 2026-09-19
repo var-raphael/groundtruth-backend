@@ -18,16 +18,39 @@ type CandidateReport struct {
 	Warning string `json:"warning,omitempty"`
 }
 
+type EvidenceReport struct {
+	CandidateID string    `json:"candidateId"`
+	JobID       string    `json:"jobId"`
+	GeneratedAt time.Time `json:"generatedAt"`
+
+	Evidence []RepoEvidenceSummary `json:"evidence"`
+
+	Contributions []ContributionSummary `json:"contributions,omitempty"`
+
+	Reasoning ReasoningSummary `json:"reasoning"`
+
+	Warning string `json:"warning,omitempty"`
+}
+
 type CandidateSummary struct {
-	Name            string `json:"name"`
-	GithubUsername  string `json:"githubUsername"`
-	Email           string `json:"email"`
-	Country         string `json:"country"`
-	YearsExperience int    `json:"yearsExperience"`
+	CandidateID    string `json:"candidateId"`
+	Name           string `json:"name"`
+	GithubID       int64  `json:"githubId,omitempty"`
+	GithubUsername string `json:"githubUsername"`
+	Email          string `json:"email"`
+	Country        string `json:"country"`
+	City           string `json:"city,omitempty"`
+	Timezone       string `json:"timezone,omitempty"`
+
+	ClaimedExperienceYears int `json:"claimedExperienceYears"`
 
 	LinkedIn  string `json:"linkedin,omitempty"`
 	X         string `json:"x,omitempty"`
 	Portfolio string `json:"portfolio,omitempty"`
+
+	Status          string    `json:"status"`
+	StatusUpdatedAt time.Time `json:"statusUpdatedAt"`
+	AppliedAt       time.Time `json:"appliedAt"`
 }
 
 type RepoEvidenceSummary struct {
@@ -39,9 +62,15 @@ type RepoEvidenceSummary struct {
 
 	Languages map[string]float64 `json:"languages"`
 
+	DetectedStack      []string `json:"detectedStack,omitempty"`
+	DetectedStackError string   `json:"detectedStackError,omitempty"`
+
 	Commits90d        int  `json:"commits90d"`
 	ActiveWeeks90d    int  `json:"activeWeeks90d"`
 	SuspiciousPadding bool `json:"suspiciousPadding"`
+
+	JunkDirs       []string `json:"junkDirs,omitempty"`
+	EnvFilesPushed []string `json:"envFilesPushed,omitempty"`
 
 	HasReadme     bool `json:"hasReadme"`
 	ReadmeTrunced bool `json:"readmeTruncated"`
@@ -61,10 +90,18 @@ type ReasoningSummary struct {
 }
 
 type ScoreBreakdownSummary struct {
-	StackMatch       float64 `json:"stackMatch"`
-	EvidenceStrength float64 `json:"evidenceStrength"`
-	Contributions    float64 `json:"contributions"`
-	LLMJudgment      float64 `json:"llmJudgment"`
+	StackMatch       float64                `json:"stackMatch"`
+	StackCoverage    []StackCoverageSummary `json:"stackCoverage"`
+	EvidenceStrength float64                `json:"evidenceStrength"`
+	Contributions    float64                `json:"contributions"`
+	LLMJudgment      float64                `json:"llmJudgment"`
+}
+
+type StackCoverageSummary struct {
+	Technology string   `json:"technology"`
+	Percentage float64  `json:"percentage"`
+	RepoCount  int      `json:"repoCount"`
+	Repos      []string `json:"repos"`
 }
 
 type ReasonSummary struct {

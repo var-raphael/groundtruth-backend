@@ -52,6 +52,7 @@ func main() {
 	mux.HandleFunc("DELETE /jobs/{id}", jobsHandler.DeleteJob)
 	mux.HandleFunc("POST /jobs/{id}/apply", applyHandler.Apply)
 	mux.HandleFunc("GET /jobs/{id}/candidates", candidatesHandler.ListCandidates)
+	mux.HandleFunc("GET /jobs/{id}/reports", candidatesHandler.ListReports)
 	mux.HandleFunc("GET /candidates/{id}", candidatesHandler.GetCandidate)
 	mux.HandleFunc("GET /candidates/{id}/report", candidatesHandler.GetReport)
 	mux.HandleFunc("POST /scan", scanHandler.TriggerScan)
@@ -62,7 +63,7 @@ func main() {
 
 	log.Printf("listening on :%s", cfg.Port)
 	log.Printf("WARNING: using FakeAuth middleware — all requests authenticated as dev recruiter, replace before production")
-	if err := http.ListenAndServe(":"+cfg.Port, middleware.FakeAuth(mux)); err != nil {
+	if err := http.ListenAndServe(":"+cfg.Port, middleware.CORS(middleware.FakeAuth(mux))); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
 }

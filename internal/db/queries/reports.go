@@ -10,9 +10,7 @@ import (
 	"github.com/var-raphael/groundtruth/internal/models"
 )
 
-// SaveReport upserts a candidate's report for a job. Called once the scoring
-// pipeline finishes (see internal/scoring/pipeline.go's BuildReport).
-func SaveReport(ctx context.Context, pool *pgxpool.Pool, report *models.CandidateReport) error {
+func SaveReport(ctx context.Context, pool *pgxpool.Pool, report *models.EvidenceReport) error {
 	body, err := json.Marshal(report)
 	if err != nil {
 		return fmt.Errorf("marshaling report: %w", err)
@@ -39,7 +37,6 @@ func SaveReport(ctx context.Context, pool *pgxpool.Pool, report *models.Candidat
 	return nil
 }
 
-// GetReport fetches a single candidate's report for a job. Returns nil, nil if not found.
 func GetReport(ctx context.Context, pool *pgxpool.Pool, candidateID, jobID string) (*models.CandidateReport, error) {
 	const q = `SELECT report FROM candidate_reports WHERE candidate_id = $1 AND job_id = $2`
 
@@ -52,35 +49,80 @@ func GetReport(ctx context.Context, pool *pgxpool.Pool, candidateID, jobID strin
 		return nil, fmt.Errorf("fetching report for candidate %s / job %s: %w", candidateID, jobID, err)
 	}
 
-	var report models.CandidateReport
-	if err := json.Unmarshal(body, &report); err != nil {
+	var evidence models.EvidenceReport
+	if err := json.Unmarshal(body, &evidence); err != nil {
 		return nil, fmt.Errorf("unmarshaling report: %w", err)
 	}
-	return &report, nil
+
+	candidate, err := GetCandidate(ctx, pool, candidateID)
+	if err != nil {
+		return nil, fmt.Errorf("joining candidate identity for report %s: %w", candidateID, err)
+	}
+	if candidate == nil {
+		return nil, fmt.Errorf("candidate %s referenced by report no longer exists", candidateID)
+	}
+
+	return assembleReport(evidence, candidate.ToSummary()), nil
 }
 
-// ListReportsByJob returns all candidate reports for a job, ranked by score descending.
-// This is the primary query for the recruiter's ranked candidate list view.
-func ListReportsByJob(ctx context.Context, pool *pgxpool.Pool, jobID string) ([]models.CandidateReport, error) {
-	const q = `SELECT report FROM candidate_reports WHERE job_id = $1 ORDER BY score DESC`
+func ListReportsByJob(ctx context.Context, pool *pgxpool.Pool, jobID string, limit, offset int) ([]models.CandidateReport, int, error) {
+	var total int
+	if err := pool.QueryRow(ctx, `SELECT COUNT(*) FROM candidate_reports WHERE job_id = $1`, jobID).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("counting reports for job %s: %w", jobID, err)
+	}
 
-	rows, err := pool.Query(ctx, q, jobID)
+	const q = `SELECT candidate_id, report FROM candidate_reports WHERE job_id = $1 ORDER BY score DESC LIMIT $2 OFFSET $3`
+
+	rows, err := pool.Query(ctx, q, jobID, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("listing reports for job %s: %w", jobID, err)
+		return nil, 0, fmt.Errorf("listing reports for job %s: %w", jobID, err)
 	}
 	defer rows.Close()
 
-	var reports []models.CandidateReport
-	for rows.Next() {
-		var body []byte
-		if err := rows.Scan(&body); err != nil {
-			return nil, fmt.Errorf("scanning report row: %w", err)
-		}
-		var report models.CandidateReport
-		if err := json.Unmarshal(body, &report); err != nil {
-			return nil, fmt.Errorf("unmarshaling report: %w", err)
-		}
-		reports = append(reports, report)
+	type pending struct {
+		candidateID string
+		evidence    models.EvidenceReport
 	}
-	return reports, rows.Err()
+	var all []pending
+	for rows.Next() {
+		var candidateID string
+		var body []byte
+		if err := rows.Scan(&candidateID, &body); err != nil {
+			return nil, 0, fmt.Errorf("scanning report row: %w", err)
+		}
+		var evidence models.EvidenceReport
+		if err := json.Unmarshal(body, &evidence); err != nil {
+			return nil, 0, fmt.Errorf("unmarshaling report: %w", err)
+		}
+		all = append(all, pending{candidateID: candidateID, evidence: evidence})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	reports := make([]models.CandidateReport, 0, len(all))
+	for _, p := range all {
+		candidate, err := GetCandidate(ctx, pool, p.candidateID)
+		if err != nil {
+			return nil, 0, fmt.Errorf("joining candidate identity for report %s: %w", p.candidateID, err)
+		}
+		if candidate == nil {
+			continue
+		}
+		reports = append(reports, *assembleReport(p.evidence, candidate.ToSummary()))
+	}
+	return reports, total, nil
+}
+
+func assembleReport(evidence models.EvidenceReport, candidate models.CandidateSummary) *models.CandidateReport {
+	return &models.CandidateReport{
+		CandidateID:   evidence.CandidateID,
+		JobID:         evidence.JobID,
+		GeneratedAt:   evidence.GeneratedAt,
+		Candidate:     candidate,
+		Evidence:      evidence.Evidence,
+		Contributions: evidence.Contributions,
+		Reasoning:     evidence.Reasoning,
+		Warning:       evidence.Warning,
+	}
 }
