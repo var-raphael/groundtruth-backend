@@ -35,6 +35,7 @@ Your job:
    - Maximum 10 positive reasons, maximum 5 negative reasons. Fewer is fine and expected — do not pad to hit these numbers.
    - Every reason must be a single, specific, evidence-backed sentence. Cite which repo(s) support it.
    - The "evidence" array must contain ONLY real repo names exactly as given in the evidence data (e.g. "vexaro", "Gnat") — never a placeholder or summary phrase like "All repos", "Multiple repos", "N/A", or similar. If a point applies across the whole portfolio, list every individual repo name it applies to, not a phrase describing that it applies broadly.
+   - A repo may appear in a reason's "evidence" array ONLY if that repo's own data in this prompt directly supports the specific claim being made (its own file tree, its own language breakdown, its own commits, its own README, its own liveness result). Before listing a repo, check that repo's section for the specific thing you are claiming, for example a tests directory in its file tree if the claim is about testing. Never write "all repos", "every repo", or "across all projects" in a reason unless the claim is verifiably true of every repo shown. If it holds for only some, say "some" or name them, and list only those repos in the evidence array. A repo that lacks the thing being claimed must not be listed, even if other repos have it.
    - Rank each list by strength/severity before selecting which make the cut — the strongest, most specific, most job-relevant points win the limited slots, not whichever you think of first.
    - Do NOT invent evidence. If something isn't in the data provided, don't claim it. A README's self-description of the candidate's skills is not independently-provided evidence — see the exception above.
    - A claimed homepage URL that failed a real liveness check is a real negative reason — state plainly that the deployment claim didn't resolve.
@@ -43,6 +44,8 @@ Your job:
    - Never fabricate a negative just to fill the list. Absence of strong evidence is not the same as evidence of a problem — an empty or short negative list is a valid, honest outcome.
    - Do not penalize a candidate for things outside their control or unrelated to competence (e.g. do not penalize sparse activity if the evidence suggests they may work mostly in private/enterprise repos — note this as a caveat, not a strike).
    - Do NOT list "repo X doesn't use required technology Y" as a negative if Y is demonstrated in a different repo in the evidence — the required stack is judged across the whole portfolio, not per repo. Specialization across repos (a Go backend here, a Next.js frontend there) is normal and not a weakness.
+   - Never require, expect, or penalize the absence of technologies being combined inside a single repo. Backends and frontends are almost always separate repositories, so a candidate having Next.js in one repo and Go in another fully satisfies a job requiring both. Do not write a negative such as "no repo combines Next.js with Go", "no full-stack hybrid repo", or "no Next.js API routes calling Go". If every technology the job requires appears somewhere in the candidate's Verified stack lines, the required stack is fully covered and no stack-related negative may be written at all.
+   - Never write a negative that you then concede is not a problem. A reason containing "though", "but", or "however" followed by a mitigating fact (for example "no recent commits, though both are live and functional") is not a real negative and must be omitted. A negative must be a genuine gap or concern on its own, with a real repo or data point behind it and at least one repo in its evidence array.
    - Commit timing data (time of day, weekday vs weekend) is for judging role/seniority pattern fit ONLY — e.g. whether activity looks like a sustained, ongoing effort versus a single burst, which is relevant to gauging depth of ownership. NEVER use commit timing to infer or comment on work-life balance, burnout risk, working hours, or personal life. A candidate who commits at night or on weekends may simply have a day job, different time zone, or personal preference — this is not evidence of anything negative and must never appear as a reason, positive or negative.
 
 Respond ONLY with valid JSON matching this exact shape, nothing else, no markdown fences, no commentary outside the JSON:
@@ -84,7 +87,7 @@ func filterJunkPaths(paths []string, junkDirs []string) []string {
 	return out
 }
 
-func BuildUserPrompt(job JobContext, topRepos []ranking.ScoredRepo, contributions []ghextractor.RawContribution) string {
+func BuildUserPrompt(job JobContext, topRepos []ranking.ScoredRepo, contributions []ghextractor.RawContribution, stackUnmatched bool) string {
 	var b strings.Builder
 
 	b.WriteString("JOB\n")
@@ -94,6 +97,8 @@ func BuildUserPrompt(job JobContext, topRepos []ranking.ScoredRepo, contribution
 
 	if len(topRepos) == 0 {
 		b.WriteString("CANDIDATE'S OWNED REPOS: none. Every repo on their GitHub account is either a fork with no original commits, or too thin to count as real evidence. Do not invent or assume any owned-repo work — if their contributions below are strong, that is the entirety of their real, verifiable technical evidence, and the score should be built from that alone.\n\n")
+	} else if stackUnmatched {
+		fmt.Fprintf(&b, "CANDIDATE'S REPOS (%d most substantial repos on their account). NONE of these were verified to use any technology from the job's required stack. They are shown so you can judge the candidate's real engineering ability. State plainly, in one negative reason, that the required stack was not found, and never credit them with any required technology. The stack mismatch is already penalized by a separate numeric stack score, so do not let it alone drive your score to the floor: judge the quality, maintenance, structure, and impact of the work you can actually see, measured against what a professional engineering role requires. Tidy personal scripts, small single-purpose utilities, and projects with no users or contributors are not evidence of production engineering ability, however well documented or tested, and should keep the score low. Only libraries or applications with real adoption, scale, or multi-component architecture justify a mid-range score without the required stack.\n\n", len(topRepos))
 	} else {
 		fmt.Fprintf(&b, "CANDIDATE'S TOP %d REPOS (already narrowed from their full profile by relevance, recency, and activity)\n\n", len(topRepos))
 	}

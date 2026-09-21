@@ -8,15 +8,11 @@ import (
 	"github.com/var-raphael/groundtruth/internal/api/middleware"
 	"github.com/var-raphael/groundtruth/internal/db/queries"
 	"github.com/var-raphael/groundtruth/internal/models"
+	"github.com/var-raphael/groundtruth/internal/plans"
 )
 
 type JobsHandler struct {
 	Pool *pgxpool.Pool
-}
-
-var planCandidateLimits = map[string]int{
-	"free": 50,
-	"pro":  500,
 }
 
 type createJobRequest struct {
@@ -89,10 +85,7 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limit, ok := planCandidateLimits[recruiter.Plan]
-	if !ok {
-		limit = planCandidateLimits["free"]
-	}
+	limit := plans.For(recruiter.Plan).MaxCandidatesPerJob
 
 	job := &models.Job{
 		RecruiterID:        recruiterID,

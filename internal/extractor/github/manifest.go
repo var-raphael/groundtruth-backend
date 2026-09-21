@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/git-pkgs/manifests"
@@ -15,18 +16,62 @@ type ManifestFile struct {
 	Content   string
 }
 
-const maxManifestFiles = 10
+const maxManifestFiles = 5
 const maxManifestBytes = 20000
+const minManifestContentBytes = 5
+
+func isCIConfigPath(p string) bool {
+	if strings.HasPrefix(p, ".github/workflows/") {
+		return true
+	}
+	base := path.Base(p)
+	if base == ".gitlab-ci.yml" || base == ".gitlab-ci.yaml" {
+		return true
+	}
+	if base == "Jenkinsfile" {
+		return true
+	}
+	if strings.HasPrefix(p, ".circleci/") {
+		return true
+	}
+	return false
+}
 
 func FindManifestPaths(paths []string) []string {
 	var found []string
 	for _, p := range paths {
-		if _, _, ok := manifests.Identify(p); ok {
-			found = append(found, p)
+		if isCIConfigPath(p) {
+			continue
 		}
+		ecosystem, _, ok := manifests.Identify(p)
+		if !ok {
+			continue
+		}
+		if ecosystem == "github-actions" {
+			continue
+		}
+		found = append(found, p)
 	}
 	if len(found) > maxManifestFiles {
 		found = found[:maxManifestFiles]
+	}
+	return found
+}
+
+func FindAllManifestPaths(paths []string) []string {
+	var found []string
+	for _, p := range paths {
+		if isCIConfigPath(p) {
+			continue
+		}
+		ecosystem, _, ok := manifests.Identify(p)
+		if !ok {
+			continue
+		}
+		if ecosystem == "github-actions" {
+			continue
+		}
+		found = append(found, p)
 	}
 	return found
 }
@@ -49,6 +94,9 @@ func FetchManifestFiles(ctx context.Context, client *github.Client, owner, repo 
 		if err != nil {
 			continue
 		}
+		if len(strings.TrimSpace(content)) < minManifestContentBytes {
+			continue
+		}
 		if len(content) > maxManifestBytes {
 			content = content[:maxManifestBytes]
 		}
@@ -56,6 +104,9 @@ func FetchManifestFiles(ctx context.Context, client *github.Client, owner, repo 
 		ecosystem := ""
 		if parsed, parseErr := manifests.Parse(p, []byte(content)); parseErr == nil {
 			ecosystem = parsed.Ecosystem
+		}
+		if ecosystem == "github-actions" {
+			continue
 		}
 
 		files = append(files, ManifestFile{Path: p, Ecosystem: ecosystem, Content: content})

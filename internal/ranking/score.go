@@ -21,6 +21,8 @@ type ScoredRepo struct {
 
 	DetectedStack []string
 
+	Stale bool
+
 	ActivityError      string `json:"ActivityError,omitempty"`
 	TreeError          string `json:"TreeError,omitempty"`
 	LanguagesError     string `json:"LanguagesError,omitempty"`
@@ -58,10 +60,7 @@ func (s ScoredRepo) nonStackCeiling() float64 {
 }
 
 func ScoreRepo(repo ghextractor.RawRepo, activity *ghextractor.ActivitySummary, tree *ghextractor.TreeSummary, languages ghextractor.LanguageBreakdown, jobStack []string) ScoredRepo {
-	stackScore := stackMatchScore(languages, jobStack)
-
-	score := stackScore
-	score += recencyScore(repo.PushedAt)
+	score := recencyScore(repo.PushedAt)
 	score += activityScore(activity)
 	score += livenessScore(repo.HomepageURL, nil)
 	score += treeQualityScore(tree)
@@ -72,8 +71,12 @@ func ScoreRepo(repo ghextractor.RawRepo, activity *ghextractor.ActivitySummary, 
 		Tree:            tree,
 		Languages:       languages,
 		Score:           score,
-		StackMatchScore: stackScore,
+		StackMatchScore: 0,
 	}
+}
+
+func ByteLanguageMatchScore(languages ghextractor.LanguageBreakdown, jobStack []string) float64 {
+	return stackMatchScore(languages, jobStack)
 }
 
 func stackMatchScore(languages ghextractor.LanguageBreakdown, jobStack []string) float64 {

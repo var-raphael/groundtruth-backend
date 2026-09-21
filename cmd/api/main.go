@@ -45,7 +45,9 @@ func main() {
 	worker.StartScheduler(ctx, time.Minute, pool, githubClient, mistralClients)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /candidates/{id}/outreach", outreachHandler.DraftOutreach)
+	mux.HandleFunc("GET /candidates/{id}/outreach", outreachHandler.GetDraft)
+	mux.HandleFunc("POST /candidates/{id}/outreach", outreachHandler.GenerateDraft)
+	mux.HandleFunc("PUT /candidates/{id}/outreach", outreachHandler.SaveDraft)
 	mux.HandleFunc("POST /jobs", jobsHandler.CreateJob)
 	mux.HandleFunc("GET /jobs", jobsHandler.ListJobs)
 	mux.HandleFunc("GET /jobs/{id}", jobsHandler.GetJob)

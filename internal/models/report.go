@@ -60,14 +60,14 @@ type RepoEvidenceSummary struct {
 	LiveURL     string `json:"liveUrl,omitempty"`
 	IsLive      bool   `json:"isLive"`
 
-	Languages map[string]float64 `json:"languages"`
-
 	DetectedStack      []string `json:"detectedStack,omitempty"`
 	DetectedStackError string   `json:"detectedStackError,omitempty"`
 
 	Commits90d        int  `json:"commits90d"`
 	ActiveWeeks90d    int  `json:"activeWeeks90d"`
 	SuspiciousPadding bool `json:"suspiciousPadding"`
+
+	Stale bool `json:"stale,omitempty"`
 
 	JunkDirs       []string `json:"junkDirs,omitempty"`
 	EnvFilesPushed []string `json:"envFilesPushed,omitempty"`

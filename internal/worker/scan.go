@@ -22,7 +22,7 @@ type extractedCandidate struct {
 }
 
 type ScanOptions struct {
-	Force bool
+	Force       bool
 	CandidateID string
 }
 
@@ -192,8 +192,17 @@ func runScoring(ctx context.Context, pool *pgxpool.Pool, githubClient *github.Cl
 		candidateGithubClient = ghextractor.NewClient(*ec.candidate.GithubToken)
 	}
 
-	ec.evidence.TopRepos = scoring.ApplyDetectedStack(ctx, candidateGithubClient, mistralClient, ec.candidate.GithubUsername, ec.evidence.TopRepos, ec.job.Stack)
-	ec.evidence.TopRepos = ranking.SelectVerifiedTopRepos(ec.evidence.TopRepos, ec.job.Stack, 0)
+	allRepos := ec.evidence.TopRepos
+	shortlist := ranking.ShortlistForDetection(allRepos, ec.job.Stack)
+	shortlist = scoring.ApplyDetectedStack(ctx, candidateGithubClient, mistralClient, ec.candidate.GithubUsername, shortlist, ec.job.Stack)
+	verified := ranking.SelectVerifiedTopRepos(shortlist, ec.job.Stack, 0)
+
+	ec.evidence.StackUnmatched = false
+	if len(verified) == 0 && len(allRepos) > 0 {
+		verified = ranking.FallbackRepos(shortlist, allRepos)
+		ec.evidence.StackUnmatched = len(verified) > 0
+	}
+	ec.evidence.TopRepos = verified
 
 	result, err := scoring.ScoreWithEvidence(ctx, mistralClient, ec.candidate.GithubUsername, jobCtx, ec.evidence)
 	if err != nil {

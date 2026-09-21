@@ -27,8 +27,8 @@ type FinalScoreBreakdown struct {
 const (
 	weightStackMatch       = 0.25
 	weightEvidenceStrength = 0.25
-	weightContributions    = 0.10
-	weightLLMJudgment      = 0.40
+	weightContributions    = 0.15
+	weightLLMJudgment      = 0.35
 )
 
 func ComputeFinalScore(topRepos []ranking.ScoredRepo, contributions []ghextractor.RawContribution, llmScore int, jobStack []string) FinalScoreBreakdown {
@@ -165,19 +165,14 @@ func repoUsesTechnology(r ranking.ScoredRepo, tech string) bool {
 }
 
 func normalizedAverageEvidenceStrength(repos []ranking.ScoredRepo) float64 {
-	var total float64
-	var relevant int
-	for _, r := range repos {
-		if r.StackMatchScore <= 0 {
-			continue
-		}
-		total += r.NonStackScore()
-		relevant++
-	}
-	if relevant == 0 {
+	if len(repos) == 0 {
 		return 0
 	}
-	avg := total / float64(relevant)
+	var total float64
+	for _, r := range repos {
+		total += r.NonStackScore()
+	}
+	avg := total / float64(len(repos))
 	return (avg / ranking.MaxNonStackScore) * 10.0
 }
 

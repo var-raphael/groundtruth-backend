@@ -27,6 +27,7 @@ type GithubEvidence struct {
 	TopRepos           []ranking.ScoredRepo
 	Contributions      []ghextractor.RawContribution
 	ContributionsError string
+	StackUnmatched     bool
 }
 
 func ExtractGithubEvidence(
@@ -79,7 +80,7 @@ func ScoreWithEvidence(
 		}, nil
 	}
 
-	userPrompt := llm.BuildUserPrompt(job, evidence.TopRepos, evidence.Contributions)
+	userPrompt := llm.BuildUserPrompt(job, evidence.TopRepos, evidence.Contributions, evidence.StackUnmatched)
 
 	const scoringTemperature = 0.0
 	const maxParseRetries = 2
@@ -122,6 +123,10 @@ func ScoreWithEvidence(
 	resolved, unresolvedEvidence := llm.ResolveEvidence(reasoning, evidenceSources)
 	if len(unresolvedEvidence) > 0 {
 		log.Printf("scoring %s: LLM cited evidence names that don't match any real repo/contribution: %v", username, unresolvedEvidence)
+	}
+
+	if evidence.StackUnmatched && warning == "" {
+		warning = "repos were found but none match the job's required stack"
 	}
 
 	return &Result{
@@ -205,10 +210,10 @@ func BuildReport(candidateID, jobID string, jobStack []string, result *Result) *
 			Name:               r.Repo.Name,
 			Description:        r.Repo.Description,
 			RepoURL:            r.Repo.RepoURL,
-			Languages:          languagePercentages(r.Languages),
 			DetectedStack:      r.DetectedStack,
 			DetectedStackError: r.DetectedStackError,
 			Score:              r.Score,
+			Stale:              r.Stale,
 		}
 		if r.Activity != nil {
 			summary.Commits90d = r.Activity.TotalCommits90d
@@ -307,20 +312,4 @@ func convertReasons(reasons []llm.ResolvedReason) []models.ReasonSummary {
 	return out
 }
 
-func languagePercentages(langs ghextractor.LanguageBreakdown) map[string]float64 {
-	if len(langs) == 0 {
-		return nil
-	}
-	var total int
-	for _, bytes := range langs {
-		total += bytes
-	}
-	if total == 0 {
-		return nil
-	}
-	out := make(map[string]float64, len(langs))
-	for lang, bytes := range langs {
-		out[lang] = float64(bytes) / float64(total) * 100
-	}
-	return out
-}
+

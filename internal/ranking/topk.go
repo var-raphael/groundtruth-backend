@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	ghextractor "github.com/var-raphael/groundtruth/internal/extractor/github"
 	"github.com/google/go-github/v66/github"
@@ -32,7 +33,10 @@ func runBounded(n int, fn func(i int)) {
 }
 
 func hasSubstance(tree *ghextractor.TreeSummary) bool {
-	return tree != nil && len(tree.Paths) >= minTreeFilesForSubstance
+	if tree == nil {
+		return false
+	}
+	return ghextractor.CountNonJunkFiles(tree.Paths, tree.Junk.JunkDirs) >= minTreeFilesForSubstance
 }
 
 func BuildTopRepos(ctx context.Context, client *github.Client, username string, allRepos []ghextractor.RawRepo, jobStack []string, topK int) ([]ScoredRepo, error) {
@@ -115,6 +119,86 @@ func BuildTopRepos(ctx context.Context, client *github.Client, username string, 
 	return scored, nil
 }
 
+const shortlistRecencyMonths = 12
+
+const maxShortlistForDetection = 10
+
+const minShortlistBeforeStaleFallback = 3
+
+func ShortlistForDetection(scored []ScoredRepo, jobStack []string) []ScoredRepo {
+	cutoff := time.Now().AddDate(0, -shortlistRecencyMonths, 0)
+
+	passesQuality := func(sr ScoredRepo) bool {
+		if sr.Tree == nil {
+			return false
+		}
+		if sr.Tree.Junk.HasIssue() {
+			return false
+		}
+		if !sr.Tree.HasReadme {
+			return false
+		}
+		hasCandidatePaths := len(ghextractor.FindCandidatePaths(sr.Tree.Paths)) > 0
+		hasStrongLanguageMatch := ByteLanguageMatchScore(sr.Languages, jobStack) > 0
+		return hasCandidatePaths || hasStrongLanguageMatch
+	}
+
+	pushedAt := func(sr ScoredRepo) (time.Time, bool) {
+		t, err := time.Parse("2006-01-02 15:04:05 -0700 MST", sr.Repo.PushedAt)
+		if err != nil {
+			return time.Time{}, false
+		}
+		return t, true
+	}
+
+	var eligible []ScoredRepo
+	for _, sr := range scored {
+		if passesQuality(sr) {
+			eligible = append(eligible, sr)
+		}
+	}
+
+	var recent []ScoredRepo
+	var older []ScoredRepo
+	for _, sr := range eligible {
+		t, ok := pushedAt(sr)
+		if !ok {
+			continue
+		}
+		if t.Before(cutoff) {
+			older = append(older, sr)
+		} else {
+			recent = append(recent, sr)
+		}
+	}
+
+	sort.Slice(recent, func(i, j int) bool {
+		return recent[i].Score > recent[j].Score
+	})
+
+	shortlist := recent
+	if len(shortlist) < minShortlistBeforeStaleFallback {
+		sort.Slice(older, func(i, j int) bool {
+			ti, _ := pushedAt(older[i])
+			tj, _ := pushedAt(older[j])
+			return ti.After(tj)
+		})
+		for _, sr := range older {
+			if len(shortlist) >= minShortlistBeforeStaleFallback {
+				break
+			}
+			sr.Stale = true
+			shortlist = append(shortlist, sr)
+		}
+	}
+
+	if len(shortlist) > maxShortlistForDetection {
+		shortlist = shortlist[:maxShortlistForDetection]
+	}
+
+	return shortlist
+}
+
 func SelectVerifiedTopRepos(scored []ScoredRepo, jobStack []string, topK int) []ScoredRepo {
 	if topK <= 0 {
 		topK = defaultTopK
@@ -129,6 +213,25 @@ func SelectVerifiedTopRepos(scored []ScoredRepo, jobStack []string, topK int) []
 		return verified
 	}
 	return selectTopK(scored, jobStack, topK)
+}
+
+const maxFallbackRepos = 4
+
+func FallbackRepos(shortlist []ScoredRepo, all []ScoredRepo) []ScoredRepo {
+	source := shortlist
+	if len(source) == 0 {
+		source = make([]ScoredRepo, len(all))
+		copy(source, all)
+		sort.Slice(source, func(i, j int) bool {
+			return source[i].Score > source[j].Score
+		})
+	}
+	if len(source) > maxFallbackRepos {
+		source = source[:maxFallbackRepos]
+	}
+	out := make([]ScoredRepo, len(source))
+	copy(out, source)
+	return out
 }
 
 func selectTopK(scored []ScoredRepo, jobStack []string, topK int) []ScoredRepo {

@@ -26,7 +26,7 @@ type Config struct {
 // where env vars are injected directly) and returns a populated Config.
 // Returns an error if any required variable is missing.
 func Load() (*Config, error) {
-	_ = godotenv.Load() // fine if .env doesn't exist
+	_ = godotenv.Overload()
 
 	cfg := &Config{
 		DatabaseURL:    os.Getenv("DATABASE_URL"),

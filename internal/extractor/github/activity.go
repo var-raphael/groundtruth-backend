@@ -10,38 +10,23 @@ import (
 	"github.com/google/go-github/v66/github"
 )
 
-// WeeklyCommits mirrors GitHub's stats/commit_activity response: one entry
-// per week over the last 52 weeks, with a total commit count for that week.
 type WeeklyCommits struct {
-	WeekStart int64 // unix timestamp, start of week
+	WeekStart int64
 	Total     int
 }
 
-// ActivitySummary is the shaped-down view ranking/score.go actually needs.
 type ActivitySummary struct {
 	TotalCommits90d int
-	ActiveWeeks90d  int // how many of the last ~13 weeks had at least 1 commit
+	ActiveWeeks90d  int
 
-	// authenticity signal: true if the weekly pattern looks artificially
-	// uniform (near-identical commit counts every single week, no natural
-	// variance) rather than the bursty, uneven pattern real work produces.
 	SuspiciousPadding bool
 }
 
 const (
 	activityStatsMaxRetries = 3
-	activityStatsRetryWait  = 2 * time.Second
+	activityStatsRetryWait  = 5 * time.Second
 )
 
-// FetchActivity pulls the 52-week commit activity for a repo and reduces it
-// to the last ~13 weeks (roughly 90 days) for recency/frequency scoring.
-//
-// GitHub computes these stats asynchronously on first request for a repo
-// that hasn't been queried recently — a 202 response means "still
-// computing, try again shortly," not "zero activity." Returning zeros for
-// a 202 would silently misrepresent a candidate's real activity as
-// nonexistent, so this retries a few times with a short wait before giving
-// up and returning empty data.
 func FetchActivity(ctx context.Context, client *github.Client, owner, repo string) (*ActivitySummary, error) {
 	var weeks []*github.WeeklyCommitActivity
 
@@ -92,14 +77,9 @@ func FetchActivity(ctx context.Context, client *github.Client, owner, repo strin
 	}, nil
 }
 
-// looksArtificiallyUniform is a deliberately simple, honest heuristic — not
-// a confident fraud verdict. Real human activity has natural variance week
-// to week (bursts around real problems, quiet weeks around other work).
-// A long run of weeks with near-identical, nonzero commit counts is unusual
-// enough to flag for a closer look, not enough on its own to penalize hard.
 func looksArtificiallyUniform(weeks []*github.WeeklyCommitActivity) bool {
 	if len(weeks) < 8 {
-		return false // not enough data to say anything meaningful
+		return false
 	}
 
 	nonZero := make([]int, 0, len(weeks))
@@ -109,7 +89,7 @@ func looksArtificiallyUniform(weeks []*github.WeeklyCommitActivity) bool {
 		}
 	}
 	if len(nonZero) < 8 {
-		return false // too sparse to judge uniformity
+		return false
 	}
 
 	first := nonZero[0]

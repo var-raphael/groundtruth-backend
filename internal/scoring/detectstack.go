@@ -46,18 +46,33 @@ func applyDetectedStackToBatch(
 	inputs := make([]llm.StackDetectionRepoInput, len(batch))
 	for i := range batch {
 		var manifestFiles []ghextractor.ManifestFile
+		var infraFiles []ghextractor.InfraConfigFile
 		if batch[i].Tree != nil {
-			manifestPaths := ghextractor.FindManifestPaths(batch[i].Tree.Paths)
-			files, err := ghextractor.FetchManifestFiles(ctx, githubClient, owner, batch[i].Repo.Name, manifestPaths)
+			candidatePaths := ghextractor.FindCandidatePaths(batch[i].Tree.Paths)
+			selection, err := llm.RankManifestAndInfraCandidates(ctx, mistralClient, candidatePaths)
 			if err != nil {
 				batch[i].DetectedStackError = err.Error()
+			} else {
+				files, err := ghextractor.FetchManifestFiles(ctx, githubClient, owner, batch[i].Repo.Name, selection.ManifestPaths)
+				if err != nil {
+					batch[i].DetectedStackError = err.Error()
+				}
+				manifestFiles = files
+
+				iFiles, err := ghextractor.FetchInfraConfigFiles(ctx, githubClient, owner, batch[i].Repo.Name, selection.InfraPaths)
+				if err != nil {
+					if batch[i].DetectedStackError == "" {
+						batch[i].DetectedStackError = err.Error()
+					}
+				}
+				infraFiles = iFiles
 			}
-			manifestFiles = files
 		}
 		inputs[i] = llm.StackDetectionRepoInput{
-			Name:          batch[i].Repo.Name,
-			Languages:     batch[i].Languages,
-			ManifestFiles: manifestFiles,
+			Name:             batch[i].Repo.Name,
+			Languages:        batch[i].Languages,
+			ManifestFiles:    manifestFiles,
+			InfraConfigFiles: infraFiles,
 		}
 	}
 
