@@ -9,9 +9,10 @@ import "encoding/json"
 // recruiter-facing link is always guaranteed correct, never something the
 // model could hallucinate or reformat wrong.
 type EvidenceLink struct {
-	Project string `json:"project"`
-	LiveURL string `json:"liveUrl,omitempty"`
-	RepoURL string `json:"repoUrl,omitempty"`
+	Project    string `json:"project"`
+	LiveURL    string `json:"liveUrl,omitempty"`
+	ReleaseURL string `json:"releaseUrl,omitempty"`
+	RepoURL    string `json:"repoUrl,omitempty"`
 }
 
 // Reason mirrors the JSON shape requested in the system prompt. Evidence

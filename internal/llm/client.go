@@ -148,7 +148,8 @@ func (c *Client) doRequest(ctx context.Context, bodyBytes []byte) (result string
 	}
 
 	if resp.StatusCode == http.StatusTooManyRequests {
-		return "", "", false, fmt.Errorf("mistral api returned status %d: %s", resp.StatusCode, truncate(string(respBytes), 500))
+		capacity := bytes.Contains(respBytes, []byte("backend_out_of_capacity"))
+		return "", resp.Header.Get("Retry-After"), capacity, fmt.Errorf("mistral api returned status %d: %s", resp.StatusCode, truncate(string(respBytes), 500))
 	}
 
 	if isRetryableStatus(resp.StatusCode) {

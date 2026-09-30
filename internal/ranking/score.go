@@ -14,6 +14,7 @@ type ScoredRepo struct {
 	Tree      *ghextractor.TreeSummary
 	Languages ghextractor.LanguageBreakdown
 	Liveness  *ghextractor.LivenessCheck
+	Release   *ghextractor.ReleaseInfo
 	Commits   []ghextractor.CommitTiming
 
 	Score           float64
@@ -43,6 +44,20 @@ const MaxTreeQualityScore = 5.0
 
 const noHomepageLivenessCredit = 3.0
 
+const releaseRecentCredit = 8.0
+const releaseStaleCredit = 5.0
+const releaseRecentWindow = 365 * 24 * time.Hour
+
+func releaseCredit(rel *ghextractor.ReleaseInfo) float64 {
+	if rel == nil {
+		return noHomepageLivenessCredit
+	}
+	if time.Since(rel.PublishedAt) <= releaseRecentWindow {
+		return releaseRecentCredit
+	}
+	return releaseStaleCredit
+}
+
 func (s ScoredRepo) NonStackScore() float64 {
 	raw := s.Score - s.StackMatchScore
 	ceiling := s.nonStackCeiling()
@@ -54,7 +69,7 @@ func (s ScoredRepo) NonStackScore() float64 {
 
 func (s ScoredRepo) nonStackCeiling() float64 {
 	if strings.TrimSpace(s.Repo.HomepageURL) == "" {
-		return MaxNonStackScore - (MaxLivenessScore - noHomepageLivenessCredit)
+		return MaxNonStackScore - (MaxLivenessScore - releaseCredit(s.Release))
 	}
 	return MaxNonStackScore
 }

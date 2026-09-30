@@ -103,6 +103,22 @@ func BuildTopRepos(ctx context.Context, client *github.Client, username string, 
 		scored[i].Score = scored[i].Score - firstPassLivenessCredit(url) + livenessScore(url, &check)
 	})
 
+	releaseIndices := make([]int, 0, len(scored))
+	for i := range scored {
+		if strings.TrimSpace(scored[i].Repo.HomepageURL) == "" {
+			releaseIndices = append(releaseIndices, i)
+		}
+	}
+	runBounded(len(releaseIndices), func(j int) {
+		i := releaseIndices[j]
+		rel, err := ghextractor.FetchLatestRelease(ctx, client, username, scored[i].Repo.Name)
+		if err != nil || rel == nil {
+			return
+		}
+		scored[i].Release = rel
+		scored[i].Score = scored[i].Score - noHomepageLivenessCredit + releaseCredit(rel)
+	})
+
 	runBounded(len(scored), func(i int) {
 		timings, err := ghextractor.FetchRecentCommitTimings(ctx, client, username, scored[i].Repo.Name, 0)
 		if err != nil {

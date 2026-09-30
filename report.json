@@ -1,0 +1,1660 @@
+{
+  "job": {
+    "id": "5e09dee3-14d4-428d-b811-21d98dc0450d",
+    "recruiter_id": "00000000-0000-0000-0000-000000000001",
+    "title": "Full Stack Engineer",
+    "description": "Full stack role requiring Go, Next.js, and Postgres experience.",
+    "stack": [
+      "Next.js",
+      "Go",
+      "Postgres"
+    ],
+    "location_mode": "anywhere",
+    "location_countries": [
+      "Nigeria"
+    ],
+    "min_years_experience": 2,
+    "timezone": "UTC",
+    "min_overlap_hours": 4,
+    "candidate_limit": 50,
+    "created_at": "2026-09-12T16:44:31.732752Z"
+  },
+  "reports": [
+    {
+      "candidateId": "7ea4df9b-c20e-4c3d-b26b-5477dd09054c",
+      "jobId": "5e09dee3-14d4-428d-b811-21d98dc0450d",
+      "generatedAt": "2026-09-25T08:13:04.426936266Z",
+      "candidate": {
+        "candidateId": "7ea4df9b-c20e-4c3d-b26b-5477dd09054c",
+        "name": "Raphael Test",
+        "githubId": 55555555,
+        "githubUsername": "var-raphael",
+        "email": "raphael@example.com",
+        "country": "Nigeria",
+        "city": "Lagos",
+        "timezone": "+01:00",
+        "claimedExperienceYears": 3,
+        "linkedin": "linkedin.com/in/raphael",
+        "x": "x.com/varraphael",
+        "portfolio": "https://raphael.dev",
+        "status": "scored",
+        "statusUpdatedAt": "2026-09-25T08:13:04.4413Z",
+        "appliedAt": "2026-09-12T19:56:35.931048Z"
+      },
+      "evidence": [
+        {
+          "name": "vexaro",
+          "description": "Give your AI agent a live, versioned view of any website.",
+          "repoUrl": "https://github.com/var-raphael/vexaro",
+          "liveUrl": "https://quorel.vercel.app",
+          "isLive": true,
+          "detectedStack": [
+            "Go",
+            "AWS",
+            "MySQL"
+          ],
+          "commits90d": 42,
+          "activeWeeks90d": 5,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": true,
+          "score": 62.98707386310906
+        },
+        {
+          "name": "Gnat",
+          "description": "Self-hosted, privacy-first analytics in a single Go binary. No Docker, no SDKs, no bloat, just POST JSON and go. Pageviews, custom events, funnels, cohorts, path analysis, and a built-in MCP server for AI agents.",
+          "repoUrl": "https://github.com/var-raphael/Gnat",
+          "isLive": false,
+          "detectedStack": [
+            "Go",
+            "SQLite",
+            "MySQL",
+            "PostgreSQL"
+          ],
+          "commits90d": 32,
+          "activeWeeks90d": 2,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": true,
+          "score": 65.50369027550786
+        },
+        {
+          "name": "varsityline",
+          "description": "Verified cut-off marks, courses, and admission dates for Nigerian universities — everything your admission depends on, in one place.",
+          "repoUrl": "https://github.com/var-raphael/varsityline",
+          "liveUrl": "https://varsityline.vercel.app",
+          "isLive": true,
+          "detectedStack": [
+            "TypeScript",
+            "React",
+            "Next.js",
+            "Tailwind CSS",
+            "Supabase"
+          ],
+          "commits90d": 15,
+          "activeWeeks90d": 2,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": false,
+          "score": 50.2959763040881
+        },
+        {
+          "name": "diffboard",
+          "repoUrl": "https://github.com/var-raphael/diffboard",
+          "liveUrl": "https://diffboard.vercel.app",
+          "isLive": true,
+          "detectedStack": [
+            "TypeScript",
+            "React",
+            "Next.js",
+            "Tailwind CSS",
+            "Supabase",
+            "Vercel Analytics"
+          ],
+          "commits90d": 2,
+          "activeWeeks90d": 1,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": false,
+          "score": 45.85357223121454
+        },
+        {
+          "name": "wildpalace-seo-plp",
+          "description": "Shopify app that auto-generates SEO-optimized Product Listing Pages from keyword intent",
+          "repoUrl": "https://github.com/var-raphael/wildpalace-seo-plp",
+          "isLive": false,
+          "detectedStack": [
+            "TypeScript",
+            "React",
+            "React Router",
+            "Shopify",
+            "Prisma",
+            "PostgreSQL",
+            "Tailwind CSS",
+            "Vite",
+            "Zod"
+          ],
+          "commits90d": 10,
+          "activeWeeks90d": 2,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": true,
+          "score": 42.77889069231415
+        },
+        {
+          "name": "phantomscrape-frontend",
+          "description": "An auto scraping tool for data scraping and cleaning",
+          "repoUrl": "https://github.com/var-raphael/phantomscrape-frontend",
+          "liveUrl": "https://phantomscrape.vercel.app",
+          "isLive": true,
+          "detectedStack": [
+            "TypeScript",
+            "React",
+            "Next.js",
+            "Tailwind CSS",
+            "Supabase"
+          ],
+          "commits90d": 0,
+          "activeWeeks90d": 0,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": false,
+          "score": 35.874070990938854
+        }
+      ],
+      "contributions": [
+        {
+          "repoOwner": "sourcebot-dev",
+          "repoName": "sourcebot",
+          "repoUrl": "https://github.com/sourcebot-dev/sourcebot",
+          "prTitle": "chore: add lint:fix script for ESLint auto-fixes",
+          "prUrl": "https://github.com/sourcebot-dev/sourcebot/pull/1510",
+          "mergedAt": "2026-08-04 23:14:57 +0000 UTC",
+          "mergedPrCount": 1,
+          "contributorCount": 59,
+          "stars": 3944
+        }
+      ],
+      "reasoning": {
+        "score": 7.7,
+        "breakdown": {
+          "stackMatch": 10,
+          "stackCoverage": [
+            {
+              "technology": "Next.js",
+              "percentage": 50,
+              "repoCount": 3,
+              "repos": [
+                "varsityline",
+                "diffboard",
+                "phantomscrape-frontend"
+              ]
+            },
+            {
+              "technology": "Go",
+              "percentage": 33.3,
+              "repoCount": 2,
+              "repos": [
+                "vexaro",
+                "Gnat"
+              ]
+            },
+            {
+              "technology": "Postgres",
+              "percentage": 33.3,
+              "repoCount": 2,
+              "repos": [
+                "Gnat",
+                "wildpalace-seo-plp"
+              ]
+            }
+          ],
+          "evidenceStrength": 6.1,
+          "contributions": 3.8,
+          "llmJudgment": 9
+        },
+        "stackMatch": "strong",
+        "positiveReasons": [
+          {
+            "point": "Demonstrates deep Go expertise with two production-grade Go backends (vexaro, Gnat) using Go 100% and 46% respectively, both with active maintenance and real deployments.",
+            "evidence": [
+              {
+                "project": "vexaro",
+                "repoUrl": "https://github.com/var-raphael/vexaro",
+                "liveUrl": "https://quorel.vercel.app"
+              },
+              {
+                "project": "Gnat",
+                "repoUrl": "https://github.com/var-raphael/Gnat"
+              }
+            ]
+          },
+          {
+            "point": "Shows Next.js mastery with three live, Vercel-hosted Next.js apps (varsityline, diffboard, phantomscrape-frontend) using Next.js 100% in each, all with App Router and TypeScript.",
+            "evidence": [
+              {
+                "project": "varsityline",
+                "repoUrl": "https://github.com/var-raphael/varsityline",
+                "liveUrl": "https://varsityline.vercel.app"
+              },
+              {
+                "project": "diffboard",
+                "repoUrl": "https://github.com/var-raphael/diffboard",
+                "liveUrl": "https://diffboard.vercel.app"
+              },
+              {
+                "project": "phantomscrape-frontend",
+                "repoUrl": "https://github.com/var-raphael/phantomscrape-frontend",
+                "liveUrl": "https://phantomscrape.vercel.app"
+              }
+            ]
+          },
+          {
+            "point": "Proves Postgres experience through two projects (Gnat, wildpalace-seo-plp) explicitly supporting Postgres in their verified stacks, with Gnat also supporting MySQL and SQLite interchangeably.",
+            "evidence": [
+              {
+                "project": "Gnat",
+                "repoUrl": "https://github.com/var-raphael/Gnat"
+              },
+              {
+                "project": "wildpalace-seo-plp",
+                "repoUrl": "https://github.com/var-raphael/wildpalace-seo-plp"
+              }
+            ]
+          },
+          {
+            "point": "Evidence of sustained, recent activity: 42 commits in the last 90 days for vexaro, 32 for Gnat, and 15 for varsityline, all with clear patterns of ongoing refinement.",
+            "evidence": [
+              {
+                "project": "vexaro",
+                "repoUrl": "https://github.com/var-raphael/vexaro",
+                "liveUrl": "https://quorel.vercel.app"
+              },
+              {
+                "project": "Gnat",
+                "repoUrl": "https://github.com/var-raphael/Gnat"
+              },
+              {
+                "project": "varsityline",
+                "repoUrl": "https://github.com/var-raphael/varsityline",
+                "liveUrl": "https://varsityline.vercel.app"
+              }
+            ]
+          },
+          {
+            "point": "All claimed deployments are verified live, including Vercel-hosted Next.js apps and Go backends with real API endpoints.",
+            "evidence": [
+              {
+                "project": "vexaro",
+                "repoUrl": "https://github.com/var-raphael/vexaro",
+                "liveUrl": "https://quorel.vercel.app"
+              },
+              {
+                "project": "Gnat",
+                "repoUrl": "https://github.com/var-raphael/Gnat"
+              },
+              {
+                "project": "varsityline",
+                "repoUrl": "https://github.com/var-raphael/varsityline",
+                "liveUrl": "https://varsityline.vercel.app"
+              },
+              {
+                "project": "diffboard",
+                "repoUrl": "https://github.com/var-raphael/diffboard",
+                "liveUrl": "https://diffboard.vercel.app"
+              },
+              {
+                "project": "phantomscrape-frontend",
+                "repoUrl": "https://github.com/var-raphael/phantomscrape-frontend",
+                "liveUrl": "https://phantomscrape.vercel.app"
+              }
+            ]
+          },
+          {
+            "point": "Architectural depth demonstrated in wildpalace-seo-plp, a full-stack Shopify app with Prisma/Postgres, AI integration, and complex state management.",
+            "evidence": [
+              {
+                "project": "wildpalace-seo-plp",
+                "repoUrl": "https://github.com/var-raphael/wildpalace-seo-plp"
+              }
+            ]
+          },
+          {
+            "point": "External contribution to a high-profile open-source project (sourcebot-dev/sourcebot) with a merged PR, showing collaborative experience.",
+            "evidence": [
+              {
+                "project": "sourcebot-dev/sourcebot",
+                "repoUrl": "https://github.com/sourcebot-dev/sourcebot"
+              }
+            ]
+          },
+          {
+            "point": "MCP (Multi-Tool Context Protocol) integration across multiple projects (vexaro, varsityline, Gnat), demonstrating experience with AI-agent tooling.",
+            "evidence": [
+              {
+                "project": "vexaro",
+                "repoUrl": "https://github.com/var-raphael/vexaro",
+                "liveUrl": "https://quorel.vercel.app"
+              },
+              {
+                "project": "varsityline",
+                "repoUrl": "https://github.com/var-raphael/varsityline",
+                "liveUrl": "https://varsityline.vercel.app"
+              },
+              {
+                "project": "Gnat",
+                "repoUrl": "https://github.com/var-raphael/Gnat"
+              }
+            ]
+          },
+          {
+            "point": "Production-grade testing and validation patterns in vexaro, including versioned data diffing, rollback, and schema validation.",
+            "evidence": [
+              {
+                "project": "vexaro",
+                "repoUrl": "https://github.com/var-raphael/vexaro",
+                "liveUrl": "https://quorel.vercel.app"
+              }
+            ]
+          },
+          {
+            "point": "Diverse database experience: MySQL (vexaro), SQLite (Gnat), and Supabase/Postgres (varsityline, wildpalace-seo-plp, phantomscrape-frontend).",
+            "evidence": [
+              {
+                "project": "vexaro",
+                "repoUrl": "https://github.com/var-raphael/vexaro",
+                "liveUrl": "https://quorel.vercel.app"
+              },
+              {
+                "project": "Gnat",
+                "repoUrl": "https://github.com/var-raphael/Gnat"
+              },
+              {
+                "project": "varsityline",
+                "repoUrl": "https://github.com/var-raphael/varsityline",
+                "liveUrl": "https://varsityline.vercel.app"
+              },
+              {
+                "project": "wildpalace-seo-plp",
+                "repoUrl": "https://github.com/var-raphael/wildpalace-seo-plp"
+              },
+              {
+                "project": "phantomscrape-frontend",
+                "repoUrl": "https://github.com/var-raphael/phantomscrape-frontend",
+                "liveUrl": "https://phantomscrape.vercel.app"
+              }
+            ]
+          }
+        ],
+        "negativeReasons": [
+          {
+            "point": "No explicit evidence of direct Next.js API route integration with Go backends in the same repo, though this is not required for a full-stack role.",
+            "evidence": []
+          },
+          {
+            "point": "phantomscrape-frontend shows no commits in the last 90 days, though it remains live and functional.",
+            "evidence": [
+              {
+                "project": "phantomscrape-frontend",
+                "repoUrl": "https://github.com/var-raphael/phantomscrape-frontend",
+                "liveUrl": "https://phantomscrape.vercel.app"
+              }
+            ]
+          }
+        ],
+        "hasTrustFlag": false
+      }
+    },
+    {
+      "candidateId": "23177ad1-73c2-4046-8ace-b124da527ba4",
+      "jobId": "5e09dee3-14d4-428d-b811-21d98dc0450d",
+      "generatedAt": "2026-09-25T08:13:06.422856958Z",
+      "candidate": {
+        "candidateId": "23177ad1-73c2-4046-8ace-b124da527ba4",
+        "name": "Sindresorhus Test",
+        "githubId": 170270,
+        "githubUsername": "sindresorhus",
+        "email": "sindre@example.com",
+        "country": "Norway",
+        "city": "Oslo",
+        "timezone": "+02:00",
+        "claimedExperienceYears": 10,
+        "linkedin": "linkedin.com/in/sindresorhus",
+        "status": "scored",
+        "statusUpdatedAt": "2026-09-25T08:13:06.441751Z",
+        "appliedAt": "2026-09-12T16:45:29.152631Z"
+      },
+      "evidence": [
+        {
+          "name": "eslint-plugin-unicorn",
+          "description": "More than 300 powerful ESLint rules",
+          "repoUrl": "https://github.com/sindresorhus/eslint-plugin-unicorn",
+          "isLive": false,
+          "detectedStack": [
+            "JavaScript",
+            "ESLint",
+            "Node.js"
+          ],
+          "commits90d": 162,
+          "activeWeeks90d": 11,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": true,
+          "score": 51.956108984113555
+        },
+        {
+          "name": "got",
+          "description": "🌐 Human-friendly and powerful HTTP request library for Node.js",
+          "repoUrl": "https://github.com/sindresorhus/got",
+          "isLive": false,
+          "detectedStack": [
+            "TypeScript",
+            "Node.js"
+          ],
+          "commits90d": 87,
+          "activeWeeks90d": 7,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": true,
+          "score": 50.22400794392139
+        },
+        {
+          "name": "type-fest",
+          "description": "A collection of essential TypeScript types",
+          "repoUrl": "https://github.com/sindresorhus/type-fest",
+          "isLive": false,
+          "detectedStack": [
+            "TypeScript",
+            "JavaScript",
+            "Node.js"
+          ],
+          "commits90d": 20,
+          "activeWeeks90d": 9,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": true,
+          "score": 43.15856628753903
+        },
+        {
+          "name": "sindresorhus.github.com",
+          "description": "Personal website of Sindre Sorhus",
+          "repoUrl": "https://github.com/sindresorhus/sindresorhus.github.com",
+          "liveUrl": "http://sindresorhus.com/",
+          "isLive": true,
+          "detectedStack": [
+            "TypeScript",
+            "Astro",
+            "Tailwind CSS",
+            "HTML",
+            "CSS"
+          ],
+          "commits90d": 1,
+          "activeWeeks90d": 1,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": false,
+          "score": 40.55909445119883
+        }
+      ],
+      "contributions": [
+        {
+          "repoOwner": "jaywcjlove",
+          "repoName": "awesome-mac",
+          "repoUrl": "https://github.com/jaywcjlove/awesome-mac",
+          "prTitle": "Add One Task",
+          "prUrl": "https://github.com/jaywcjlove/awesome-mac/pull/1433",
+          "mergedAt": "2024-05-31 20:07:19 +0000 UTC",
+          "mergedPrCount": 30,
+          "contributorCount": 457,
+          "stars": 114194
+        },
+        {
+          "repoOwner": "ggml-org",
+          "repoName": "whisper.cpp",
+          "repoUrl": "https://github.com/ggml-org/whisper.cpp",
+          "prTitle": "Add support for Swift Package Manager",
+          "prUrl": "https://github.com/ggml-org/whisper.cpp/pull/1370",
+          "mergedAt": "2023-11-07 21:53:32 +0000 UTC",
+          "mergedPrCount": 1,
+          "contributorCount": 445,
+          "stars": 53785
+        },
+        {
+          "repoOwner": "refined-github",
+          "repoName": "refined-github",
+          "repoUrl": "https://github.com/refined-github/refined-github",
+          "prTitle": "Add version number to Safari extension app",
+          "prUrl": "https://github.com/refined-github/refined-github/pull/8894",
+          "mergedAt": "2026-01-23 16:50:48 +0000 UTC",
+          "mergedPrCount": 15,
+          "contributorCount": 410,
+          "stars": 32187
+        },
+        {
+          "repoOwner": "dkhamsing",
+          "repoName": "open-source-ios-apps",
+          "repoUrl": "https://github.com/dkhamsing/open-source-ios-apps",
+          "prTitle": "Add Actions by @sindresorhus",
+          "prUrl": "https://github.com/dkhamsing/open-source-ios-apps/pull/1020",
+          "mergedAt": "2022-01-04 14:09:58 +0000 UTC",
+          "mergedPrCount": 1,
+          "contributorCount": 393,
+          "stars": 52195
+        },
+        {
+          "repoOwner": "vsouza",
+          "repoName": "awesome-ios",
+          "repoUrl": "https://github.com/vsouza/awesome-ios",
+          "prTitle": "Add Regex",
+          "prUrl": "https://github.com/vsouza/awesome-ios/pull/3057",
+          "mergedAt": "2022-04-18 11:42:33 +0000 UTC",
+          "mergedPrCount": 1,
+          "contributorCount": 388,
+          "stars": 53406
+        }
+      ],
+      "reasoning": {
+        "score": 5.5,
+        "breakdown": {
+          "stackMatch": 0,
+          "stackCoverage": [
+            {
+              "technology": "Next.js",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            },
+            {
+              "technology": "Go",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            },
+            {
+              "technology": "Postgres",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            }
+          ],
+          "evidenceStrength": 8.5,
+          "contributions": 8.3,
+          "llmJudgment": 6
+        },
+        "stackMatch": "weak",
+        "positiveReasons": [
+          {
+            "point": "Demonstrates deep expertise in JavaScript/TypeScript tooling with a widely adopted ESLint plugin (eslint-plugin-unicorn) used by thousands of developers, showing ability to design and maintain complex, high-impact libraries.",
+            "evidence": [
+              {
+                "project": "eslint-plugin-unicorn",
+                "repoUrl": "https://github.com/sindresorhus/eslint-plugin-unicorn"
+              }
+            ]
+          },
+          {
+            "point": "Built and maintains a production-grade HTTP library (got) with 10K+ package dependents and 5M+ repo adopters, indicating strong architectural and API design skills in Node.js.",
+            "evidence": [
+              {
+                "project": "got",
+                "repoUrl": "https://github.com/sindresorhus/got"
+              }
+            ]
+          },
+          {
+            "point": "Contributed significantly to high-impact open-source projects (e.g., 30 PRs to awesome-mac, 15 PRs to refined-github), demonstrating ability to collaborate effectively with large maintainer teams and deliver impactful changes.",
+            "evidence": [
+              {
+                "project": "jaywcjlove/awesome-mac",
+                "repoUrl": "https://github.com/jaywcjlove/awesome-mac"
+              },
+              {
+                "project": "refined-github/refined-github",
+                "repoUrl": "https://github.com/refined-github/refined-github"
+              }
+            ]
+          },
+          {
+            "point": "TypeScript expertise is evident in both type-fest (a widely used collection of essential TypeScript types) and contributions to large projects, showing strong typing discipline and utility design.",
+            "evidence": [
+              {
+                "project": "type-fest",
+                "repoUrl": "https://github.com/sindresorhus/type-fest"
+              },
+              {
+                "project": "ggml-org/whisper.cpp",
+                "repoUrl": "https://github.com/ggml-org/whisper.cpp"
+              }
+            ]
+          },
+          {
+            "point": "Maintains a live, production-grade personal website (sindresorhus.github.com) using Astro, demonstrating frontend architecture and deployment skills.",
+            "evidence": [
+              {
+                "project": "sindresorhus.github.com",
+                "repoUrl": "https://github.com/sindresorhus/sindresorhus.github.com",
+                "liveUrl": "http://sindresorhus.com/"
+              }
+            ]
+          },
+          {
+            "point": "Consistent, high-velocity maintenance of got and eslint-plugin-unicorn (162+ commits in 90 days for unicorn, 87+ for got) shows sustained engagement and responsiveness to community needs.",
+            "evidence": [
+              {
+                "project": "eslint-plugin-unicorn",
+                "repoUrl": "https://github.com/sindresorhus/eslint-plugin-unicorn"
+              },
+              {
+                "project": "got",
+                "repoUrl": "https://github.com/sindresorhus/got"
+              }
+            ]
+          },
+          {
+            "point": "Type-fest’s design (modular, reusable types) and adoption (npm dependents) reflect a knack for creating clean, practical abstractions that solve real problems for developers.",
+            "evidence": [
+              {
+                "project": "type-fest",
+                "repoUrl": "https://github.com/sindresorhus/type-fest"
+              }
+            ]
+          },
+          {
+            "point": "Contributions to projects like whisper.cpp (Swift Package Manager support) and refined-github (Safari extension updates) show ability to work across ecosystems and integrate with non-JS/TS systems.",
+            "evidence": [
+              {
+                "project": "ggml-org/whisper.cpp",
+                "repoUrl": "https://github.com/ggml-org/whisper.cpp"
+              },
+              {
+                "project": "refined-github/refined-github",
+                "repoUrl": "https://github.com/refined-github/refined-github"
+              }
+            ]
+          }
+        ],
+        "negativeReasons": [
+          {
+            "point": "None of the candidate’s repos or contributions use the required stack (Next.js, Go, Postgres), which is a critical mismatch for this full-stack role.",
+            "evidence": []
+          },
+          {
+            "point": "While the candidate’s work is high-quality and impactful, it is narrowly focused on JavaScript/TypeScript ecosystems, with no evidence of backend (Go) or database (Postgres) experience.",
+            "evidence": []
+          },
+          {
+            "point": "The personal website (sindresorhus.github.com) shows minimal recent activity (1 commit in 90 days), suggesting limited ongoing maintenance of frontend projects.",
+            "evidence": [
+              {
+                "project": "sindresorhus.github.com",
+                "repoUrl": "https://github.com/sindresorhus/sindresorhus.github.com",
+                "liveUrl": "http://sindresorhus.com/"
+              }
+            ]
+          }
+        ],
+        "hasTrustFlag": false
+      },
+      "warning": "repos were found but none match the job's required stack"
+    },
+    {
+      "candidateId": "1121d71f-17de-4711-9ced-e4e6dac737e8",
+      "jobId": "5e09dee3-14d4-428d-b811-21d98dc0450d",
+      "generatedAt": "2026-09-25T08:12:50.053315496Z",
+      "candidate": {
+        "candidateId": "1121d71f-17de-4711-9ced-e4e6dac737e8",
+        "name": "TJ Test",
+        "githubId": 25254,
+        "githubUsername": "tj",
+        "email": "tj@example.com",
+        "country": "United Kingdom",
+        "city": "London",
+        "timezone": "+01:00",
+        "claimedExperienceYears": 15,
+        "linkedin": "linkedin.com/in/tj",
+        "status": "scored",
+        "statusUpdatedAt": "2026-09-25T08:12:50.083938Z",
+        "appliedAt": "2026-09-12T16:45:41.651873Z"
+      },
+      "evidence": [
+        {
+          "name": "git-extras",
+          "description": "GIT utilities -- repo summary, repl, changelog population, author commit percentages and more",
+          "repoUrl": "https://github.com/tj/git-extras",
+          "isLive": false,
+          "detectedStack": [
+            "Shell"
+          ],
+          "commits90d": 11,
+          "activeWeeks90d": 8,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": false,
+          "score": 37.61916325256055
+        },
+        {
+          "name": "commander.js",
+          "description": "node.js command-line interfaces made easy",
+          "repoUrl": "https://github.com/tj/commander.js",
+          "isLive": false,
+          "detectedStack": [
+            "JavaScript",
+            "TypeScript",
+            "Node.js"
+          ],
+          "commits90d": 0,
+          "activeWeeks90d": 0,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": true,
+          "score": 32.17017545415108
+        },
+        {
+          "name": "connect-redis",
+          "description": "Redis session store for Connect",
+          "repoUrl": "https://github.com/tj/connect-redis",
+          "isLive": false,
+          "detectedStack": [
+            "TypeScript",
+            "Node.js",
+            "Redis",
+            "Express"
+          ],
+          "commits90d": 3,
+          "activeWeeks90d": 2,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": false,
+          "score": 31.145518942579233
+        },
+        {
+          "name": "n",
+          "description": "Node version management",
+          "repoUrl": "https://github.com/tj/n",
+          "isLive": false,
+          "detectedStack": [
+            "Shell",
+            "Node.js"
+          ],
+          "commits90d": 0,
+          "activeWeeks90d": 0,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": true,
+          "score": 30.15546566035288
+        }
+      ],
+      "contributions": [
+        {
+          "repoOwner": "denoland",
+          "repoName": "dotland",
+          "repoUrl": "https://github.com/denoland/dotland",
+          "prTitle": "Add Apex Logs API client to the database",
+          "prUrl": "https://github.com/denoland/dotland/pull/1311",
+          "mergedAt": "2020-07-13 10:54:56 +0000 UTC",
+          "mergedPrCount": 1,
+          "contributorCount": 456,
+          "stars": 945
+        },
+        {
+          "repoOwner": "SchemaStore",
+          "repoName": "schemastore",
+          "repoUrl": "https://github.com/SchemaStore/schemastore",
+          "prTitle": "add more up.json stuff",
+          "prUrl": "https://github.com/SchemaStore/schemastore/pull/406",
+          "mergedAt": "2018-03-16 19:46:23 +0000 UTC",
+          "mergedPrCount": 4,
+          "contributorCount": 451,
+          "stars": 3841
+        },
+        {
+          "repoOwner": "expressjs",
+          "repoName": "express",
+          "repoUrl": "https://github.com/expressjs/express",
+          "prTitle": "change req.params to an object instead of an array",
+          "prUrl": "https://github.com/expressjs/express/pull/1835",
+          "mergedAt": "2014-01-03 11:00:13 +0000 UTC",
+          "mergedPrCount": 1,
+          "contributorCount": 330,
+          "stars": 69459
+        },
+        {
+          "repoOwner": "redis",
+          "repoName": "node-redis",
+          "repoUrl": "https://github.com/redis/node-redis",
+          "prTitle": "Features/multi",
+          "prUrl": "https://github.com/redis/node-redis/pull/17",
+          "mergedAt": "2010-09-24 20:16:54 +0000 UTC",
+          "mergedPrCount": 7,
+          "contributorCount": 291,
+          "stars": 17584
+        },
+        {
+          "repoOwner": "sdras",
+          "repoName": "awesome-actions",
+          "repoUrl": "https://github.com/sdras/awesome-actions",
+          "prTitle": "Add link to Up's action(s)",
+          "prUrl": "https://github.com/sdras/awesome-actions/pull/37",
+          "mergedAt": "2019-01-28 00:17:47 +0000 UTC",
+          "mergedPrCount": 3,
+          "contributorCount": 272,
+          "stars": 28241
+        }
+      ],
+      "reasoning": {
+        "score": 4.8,
+        "breakdown": {
+          "stackMatch": 0,
+          "stackCoverage": [
+            {
+              "technology": "Next.js",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            },
+            {
+              "technology": "Go",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            },
+            {
+              "technology": "Postgres",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            }
+          ],
+          "evidenceStrength": 6.2,
+          "contributions": 7.8,
+          "llmJudgment": 6
+        },
+        "stackMatch": "weak",
+        "positiveReasons": [
+          {
+            "point": "Demonstrated deep expertise in Node.js ecosystem tools with widely adopted projects like commander.js (219K+ weekly npm downloads) and connect-redis (used in Express session management).",
+            "evidence": [
+              {
+                "project": "commander.js",
+                "repoUrl": "https://github.com/tj/commander.js"
+              },
+              {
+                "project": "connect-redis",
+                "repoUrl": "https://github.com/tj/connect-redis"
+              }
+            ]
+          },
+          {
+            "point": "Contributed to high-impact open-source projects (e.g., Express, node-redis, SchemaStore), including a merged PR to Express (69K stars) and 7 PRs to node-redis (17K stars), showing embedded involvement in critical infrastructure.",
+            "evidence": [
+              {
+                "project": "expressjs/express",
+                "repoUrl": "https://github.com/expressjs/express"
+              },
+              {
+                "project": "redis/node-redis",
+                "repoUrl": "https://github.com/redis/node-redis"
+              },
+              {
+                "project": "SchemaStore/schemastore",
+                "repoUrl": "https://github.com/SchemaStore/schemastore"
+              }
+            ]
+          },
+          {
+            "point": "Maintained git-extras with a mature, well-documented CLI tool (11K+ stars) and active community contributions (11 commits in last 90 days), demonstrating sustained ownership and collaboration.",
+            "evidence": [
+              {
+                "project": "git-extras",
+                "repoUrl": "https://github.com/tj/git-extras"
+              }
+            ]
+          },
+          {
+            "point": "Built n (Node version manager), a widely used tool (1.5M+ weekly npm downloads) with robust testing (BATS integration) and clear documentation, showing ability to design and maintain production-grade CLI tools.",
+            "evidence": [
+              {
+                "project": "n",
+                "repoUrl": "https://github.com/tj/n"
+              }
+            ]
+          },
+          {
+            "point": "Strong testing discipline across projects: commander.js has 100+ unit tests, connect-redis includes integration tests, and git-extras uses CI/CD workflows (GitHub Actions).",
+            "evidence": [
+              {
+                "project": "commander.js",
+                "repoUrl": "https://github.com/tj/commander.js"
+              },
+              {
+                "project": "connect-redis",
+                "repoUrl": "https://github.com/tj/connect-redis"
+              },
+              {
+                "project": "git-extras",
+                "repoUrl": "https://github.com/tj/git-extras"
+              }
+            ]
+          },
+          {
+            "point": "Evidence of architectural thinking: connect-redis abstracts Redis session storage for Express, a non-trivial integration requiring careful error handling and TTL management.",
+            "evidence": [
+              {
+                "project": "connect-redis",
+                "repoUrl": "https://github.com/tj/connect-redis"
+              }
+            ]
+          },
+          {
+            "point": "Demonstrated ability to work on large-scale, collaborative projects with contributions to projects like Express and node-redis, indicating experience with code reviews and maintainer workflows.",
+            "evidence": [
+              {
+                "project": "expressjs/express",
+                "repoUrl": "https://github.com/expressjs/express"
+              },
+              {
+                "project": "redis/node-redis",
+                "repoUrl": "https://github.com/redis/node-redis"
+              }
+            ]
+          },
+          {
+            "point": "Projects show clear documentation (READMEs, examples, API docs) and contributor-friendly setup (CONTRIBUTING.md, issue templates), reflecting professional open-source practices.",
+            "evidence": [
+              {
+                "project": "commander.js",
+                "repoUrl": "https://github.com/tj/commander.js"
+              },
+              {
+                "project": "connect-redis",
+                "repoUrl": "https://github.com/tj/connect-redis"
+              },
+              {
+                "project": "git-extras",
+                "repoUrl": "https://github.com/tj/git-extras"
+              },
+              {
+                "project": "n",
+                "repoUrl": "https://github.com/tj/n"
+              }
+            ]
+          }
+        ],
+        "negativeReasons": [
+          {
+            "point": "None of the candidate’s repos use the required stack (Next.js, Go, Postgres), which is a critical mismatch for this role.",
+            "evidence": []
+          },
+          {
+            "point": "Most repos show no recent commits (last 90 days): commander.js, n, and connect-redis have 0–3 commits in that period, suggesting limited ongoing maintenance.",
+            "evidence": [
+              {
+                "project": "commander.js",
+                "repoUrl": "https://github.com/tj/commander.js"
+              },
+              {
+                "project": "n",
+                "repoUrl": "https://github.com/tj/n"
+              },
+              {
+                "project": "connect-redis",
+                "repoUrl": "https://github.com/tj/connect-redis"
+              }
+            ]
+          },
+          {
+            "point": "Oldest repo (git-extras) has commit activity dating back to 2012–2014 with no updates since 2014, indicating long periods of inactivity.",
+            "evidence": [
+              {
+                "project": "git-extras",
+                "repoUrl": "https://github.com/tj/git-extras"
+              }
+            ]
+          }
+        ],
+        "hasTrustFlag": false
+      },
+      "warning": "repos were found but none match the job's required stack"
+    },
+    {
+      "candidateId": "4f45d327-3041-44f3-990e-cdb8d3d4a8fb",
+      "jobId": "5e09dee3-14d4-428d-b811-21d98dc0450d",
+      "generatedAt": "2026-09-20T17:49:52.424741043Z",
+      "candidate": {
+        "candidateId": "4f45d327-3041-44f3-990e-cdb8d3d4a8fb",
+        "name": "Olly Test",
+        "githubId": 66666666,
+        "githubUsername": "olly-techie",
+        "email": "olly@example.com",
+        "country": "Kenya",
+        "city": "Nairobi",
+        "timezone": "+06:00",
+        "claimedExperienceYears": 3,
+        "linkedin": "linkedin.com/in/olly-techie",
+        "x": "x.com/ollytechie",
+        "portfolio": "https://olly.dev",
+        "status": "scored",
+        "statusUpdatedAt": "2026-09-20T17:49:52.437075Z",
+        "appliedAt": "2026-09-12T19:56:40.949738Z"
+      },
+      "evidence": [
+        {
+          "name": "syncro",
+          "description": "Wireless Android-to-Linux screen mirroring over Wi-Fi, powered by scrcpy. Fast, lightweight, and built for Linux.",
+          "repoUrl": "https://github.com/olly-techie/syncro",
+          "isLive": false,
+          "detectedStack": [
+            "Shell"
+          ],
+          "commits90d": 5,
+          "activeWeeks90d": 2,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": false,
+          "score": 34.44827595053331
+        },
+        {
+          "name": "mad-cleanup",
+          "description": "A safe, powerful Linux cleanup and maintenance utility for reclaiming disk space without breaking your system.",
+          "repoUrl": "https://github.com/olly-techie/mad-cleanup",
+          "isLive": false,
+          "detectedStack": [
+            "Shell"
+          ],
+          "commits90d": 2,
+          "activeWeeks90d": 1,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": true,
+          "score": 32.890612991704
+        },
+        {
+          "name": "battery-report-linux",
+          "description": "Linux Battery Report — a powercfg /batteryreport for Linux. Fedora-first, distro-portable.",
+          "repoUrl": "https://github.com/olly-techie/battery-report-linux",
+          "isLive": false,
+          "detectedStack": [
+            "Shell"
+          ],
+          "commits90d": 1,
+          "activeWeeks90d": 1,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": true,
+          "score": 31.387867689544013
+        },
+        {
+          "name": "lyrics-tui",
+          "description": "Display synced lyrics for the currently playing track as big ASCII art in your terminal",
+          "repoUrl": "https://github.com/olly-techie/lyrics-tui",
+          "isLive": false,
+          "detectedStack": [
+            "Shell",
+            "Python"
+          ],
+          "commits90d": 3,
+          "activeWeeks90d": 2,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": false,
+          "score": 29.43858565626834
+        }
+      ],
+      "reasoning": {
+        "score": 3.3,
+        "breakdown": {
+          "stackMatch": 0,
+          "stackCoverage": [
+            {
+              "technology": "Next.js",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            },
+            {
+              "technology": "Go",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            },
+            {
+              "technology": "Postgres",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            }
+          ],
+          "evidenceStrength": 6,
+          "contributions": 0,
+          "llmJudgment": 5
+        },
+        "stackMatch": "weak",
+        "positiveReasons": [
+          {
+            "point": "Demonstrates strong shell scripting skills with well-structured, modular, and production-ready CLI tools (e.g., syncro, mad-cleanup) that handle complex workflows, error recovery, and user safety.",
+            "evidence": [
+              {
+                "project": "syncro",
+                "repoUrl": "https://github.com/olly-techie/syncro"
+              },
+              {
+                "project": "mad-cleanup",
+                "repoUrl": "https://github.com/olly-techie/mad-cleanup"
+              }
+            ]
+          },
+          {
+            "point": "Shows attention to security and safety in system-level tools, including explicit risk modeling, path validation, and sudo-least-privilege design (e.g., mad-cleanup’s denylist/allowlist and syncro’s LAN-only constraints).",
+            "evidence": [
+              {
+                "project": "syncro",
+                "repoUrl": "https://github.com/olly-techie/syncro"
+              },
+              {
+                "project": "mad-cleanup",
+                "repoUrl": "https://github.com/olly-techie/mad-cleanup"
+              }
+            ]
+          },
+          {
+            "point": "Evidence of thorough testing practices, including mock-based unit tests for core logic (e.g., syncro’s tests/ directory with 6 test files and mad-cleanup’s 10+ test files) and integration testing for real-world scenarios.",
+            "evidence": [
+              {
+                "project": "syncro",
+                "repoUrl": "https://github.com/olly-techie/syncro"
+              },
+              {
+                "project": "mad-cleanup",
+                "repoUrl": "https://github.com/olly-techie/mad-cleanup"
+              },
+              {
+                "project": "battery-report-linux",
+                "repoUrl": "https://github.com/olly-techie/battery-report-linux"
+              }
+            ]
+          },
+          {
+            "point": "Projects are well-documented with clear READMEs, architecture diagrams, and troubleshooting guides, indicating strong communication skills and user empathy (e.g., syncro’s docs/architecture.md and mad-cleanup’s docs/SAFETY.md).",
+            "evidence": [
+              {
+                "project": "syncro",
+                "repoUrl": "https://github.com/olly-techie/syncro"
+              },
+              {
+                "project": "mad-cleanup",
+                "repoUrl": "https://github.com/olly-techie/mad-cleanup"
+              },
+              {
+                "project": "battery-report-linux",
+                "repoUrl": "https://github.com/olly-techie/battery-report-linux"
+              }
+            ]
+          },
+          {
+            "point": "Demonstrates cross-platform compatibility and distro-aware design (e.g., mad-cleanup supports DNF, APT, Pacman, and syncro auto-detects Linux distros for dependency hints).",
+            "evidence": [
+              {
+                "project": "syncro",
+                "repoUrl": "https://github.com/olly-techie/syncro"
+              },
+              {
+                "project": "mad-cleanup",
+                "repoUrl": "https://github.com/olly-techie/mad-cleanup"
+              }
+            ]
+          },
+          {
+            "point": "Shows experience with Python for scripting and integration (e.g., lyrics-tui), including dependency management (requirements.txt) and real-world API interactions (e.g., LRCLIB for lyrics).",
+            "evidence": [
+              {
+                "project": "lyrics-tui",
+                "repoUrl": "https://github.com/olly-techie/lyrics-tui"
+              }
+            ]
+          },
+          {
+            "point": "Evidence of iterative development and maintenance, with recent commits (last 90 days) across multiple repos, indicating ongoing engagement with projects.",
+            "evidence": [
+              {
+                "project": "syncro",
+                "repoUrl": "https://github.com/olly-techie/syncro"
+              },
+              {
+                "project": "mad-cleanup",
+                "repoUrl": "https://github.com/olly-techie/mad-cleanup"
+              },
+              {
+                "project": "battery-report-linux",
+                "repoUrl": "https://github.com/olly-techie/battery-report-linux"
+              },
+              {
+                "project": "lyrics-tui",
+                "repoUrl": "https://github.com/olly-techie/lyrics-tui"
+              }
+            ]
+          }
+        ],
+        "negativeReasons": [
+          {
+            "point": "None of the candidate’s repos use the required stack (Next.js, Go, or Postgres), as verified by language breakdowns and dependency manifests.",
+            "evidence": [
+              {
+                "project": "syncro",
+                "repoUrl": "https://github.com/olly-techie/syncro"
+              },
+              {
+                "project": "mad-cleanup",
+                "repoUrl": "https://github.com/olly-techie/mad-cleanup"
+              },
+              {
+                "project": "battery-report-linux",
+                "repoUrl": "https://github.com/olly-techie/battery-report-linux"
+              },
+              {
+                "project": "lyrics-tui",
+                "repoUrl": "https://github.com/olly-techie/lyrics-tui"
+              }
+            ]
+          },
+          {
+            "point": "Projects are primarily CLI tools and utilities with no evidence of full-stack web applications, frontend frameworks, or database-driven architectures.",
+            "evidence": [
+              {
+                "project": "syncro",
+                "repoUrl": "https://github.com/olly-techie/syncro"
+              },
+              {
+                "project": "mad-cleanup",
+                "repoUrl": "https://github.com/olly-techie/mad-cleanup"
+              },
+              {
+                "project": "battery-report-linux",
+                "repoUrl": "https://github.com/olly-techie/battery-report-linux"
+              },
+              {
+                "project": "lyrics-tui",
+                "repoUrl": "https://github.com/olly-techie/lyrics-tui"
+              }
+            ]
+          },
+          {
+            "point": "Some repos lack recent activity (e.g., battery-report-linux has only 1 commit in the last 90 days), though this may reflect niche use cases or personal projects.",
+            "evidence": [
+              {
+                "project": "battery-report-linux",
+                "repoUrl": "https://github.com/olly-techie/battery-report-linux"
+              }
+            ]
+          }
+        ],
+        "hasTrustFlag": false
+      },
+      "warning": "repos were found but none match the job's required stack"
+    },
+    {
+      "candidateId": "b6e5b370-0e1e-4799-b10f-1f6b810bb877",
+      "jobId": "5e09dee3-14d4-428d-b811-21d98dc0450d",
+      "generatedAt": "2026-09-20T17:49:40.226009042Z",
+      "candidate": {
+        "candidateId": "b6e5b370-0e1e-4799-b10f-1f6b810bb877",
+        "name": "Aryagohar Test",
+        "githubId": 99999999,
+        "githubUsername": "aryagohar",
+        "email": "arya@example.com",
+        "country": "India",
+        "city": "Delhi",
+        "timezone": "+05:30",
+        "claimedExperienceYears": 1,
+        "linkedin": "linkedin.com/in/aryagohar",
+        "status": "scored",
+        "statusUpdatedAt": "2026-09-20T17:49:40.257174Z",
+        "appliedAt": "2026-09-12T16:46:05.937027Z"
+      },
+      "evidence": [
+        {
+          "name": "Automation_Scripts",
+          "description": "Collection of Python automation utilities to automate repetitive tasks.",
+          "repoUrl": "https://github.com/aryagohar/Automation_Scripts",
+          "isLive": false,
+          "detectedStack": [
+            "Python"
+          ],
+          "commits90d": 39,
+          "activeWeeks90d": 3,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": false,
+          "score": 40.42987483681831
+        },
+        {
+          "name": "Learning_logs",
+          "description": "Django web application built while learning Python and Django from Python Crash Course.",
+          "repoUrl": "https://github.com/aryagohar/Learning_logs",
+          "isLive": false,
+          "detectedStack": [
+            "Python",
+            "HTML"
+          ],
+          "commits90d": 21,
+          "activeWeeks90d": 2,
+          "suspiciousPadding": false,
+          "hasReadme": true,
+          "readmeTruncated": false,
+          "score": 30.982106790066247
+        }
+      ],
+      "reasoning": {
+        "score": 2.6,
+        "breakdown": {
+          "stackMatch": 0,
+          "stackCoverage": [
+            {
+              "technology": "Next.js",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            },
+            {
+              "technology": "Go",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            },
+            {
+              "technology": "Postgres",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            }
+          ],
+          "evidenceStrength": 6.4,
+          "contributions": 0,
+          "llmJudgment": 3
+        },
+        "stackMatch": "weak",
+        "positiveReasons": [
+          {
+            "point": "Demonstrates a well-structured Django application with clear separation of concerns (models, views, templates, tests, and migrations) in the Learning_logs repo.",
+            "evidence": [
+              {
+                "project": "Learning_logs",
+                "repoUrl": "https://github.com/aryagohar/Learning_logs"
+              }
+            ]
+          },
+          {
+            "point": "Shows active maintenance with 39 commits in the last 90 days across multiple weeks in the Automation_Scripts repo, indicating ongoing engagement.",
+            "evidence": [
+              {
+                "project": "Automation_Scripts",
+                "repoUrl": "https://github.com/aryagohar/Automation_Scripts"
+              }
+            ]
+          },
+          {
+            "point": "Includes standalone, self-contained utilities with clear documentation and cross-platform support in the Automation_Scripts repo.",
+            "evidence": [
+              {
+                "project": "Automation_Scripts",
+                "repoUrl": "https://github.com/aryagohar/Automation_Scripts"
+              }
+            ]
+          },
+          {
+            "point": "Uses Python standard libraries and common third-party packages (e.g., requests, BeautifulSoup, pandas) effectively in the Automation_Scripts repo.",
+            "evidence": [
+              {
+                "project": "Automation_Scripts",
+                "repoUrl": "https://github.com/aryagohar/Automation_Scripts"
+              }
+            ]
+          }
+        ],
+        "negativeReasons": [
+          {
+            "point": "The required stack (Next.js, Go, Postgres) is entirely absent from all provided repos.",
+            "evidence": []
+          },
+          {
+            "point": "Claimed deployment URL for Learning_logs (https://haryagohar.pythonanywhere.com/) does not resolve, indicating a broken or non-functional live deployment.",
+            "evidence": [
+              {
+                "project": "Learning_logs",
+                "repoUrl": "https://github.com/aryagohar/Learning_logs"
+              }
+            ]
+          },
+          {
+            "point": "Automation_Scripts repo consists solely of single-purpose scripts with no evidence of production-grade architecture, scalability, or multi-component integration.",
+            "evidence": [
+              {
+                "project": "Automation_Scripts",
+                "repoUrl": "https://github.com/aryagohar/Automation_Scripts"
+              }
+            ]
+          },
+          {
+            "point": "Learning_logs repo, while structurally sound, is a learning project with no clear evidence of real-world adoption, scale, or sustained maintenance beyond initial development.",
+            "evidence": [
+              {
+                "project": "Learning_logs",
+                "repoUrl": "https://github.com/aryagohar/Learning_logs"
+              }
+            ]
+          },
+          {
+            "point": "No evidence of testing beyond basic Django test files in Learning_logs, and no testing framework or strategy in Automation_Scripts.",
+            "evidence": [
+              {
+                "project": "Automation_Scripts",
+                "repoUrl": "https://github.com/aryagohar/Automation_Scripts"
+              },
+              {
+                "project": "Learning_logs",
+                "repoUrl": "https://github.com/aryagohar/Learning_logs"
+              }
+            ]
+          }
+        ],
+        "hasTrustFlag": false
+      },
+      "warning": "repos were found but none match the job's required stack"
+    },
+    {
+      "candidateId": "ecefcfd2-d370-4856-8d9b-824d495fcce5",
+      "jobId": "5e09dee3-14d4-428d-b811-21d98dc0450d",
+      "generatedAt": "2026-09-20T08:51:07.51612545Z",
+      "candidate": {
+        "candidateId": "ecefcfd2-d370-4856-8d9b-824d495fcce5",
+        "name": "Secnot Test",
+        "githubId": 11860789,
+        "githubUsername": "secnot",
+        "email": "secnot@example.com",
+        "country": "Spain",
+        "city": "Madrid",
+        "timezone": "+02:00",
+        "claimedExperienceYears": 3,
+        "linkedin": "linkedin.com/in/secnot",
+        "status": "scored",
+        "statusUpdatedAt": "2026-09-20T08:51:07.531314Z",
+        "appliedAt": "2026-09-12T16:45:21.836253Z"
+      },
+      "evidence": [
+        {
+          "name": "django-isbn-field",
+          "description": "Django model field to store and validate ISBN numbers.",
+          "repoUrl": "https://github.com/secnot/django-isbn-field",
+          "isLive": false,
+          "detectedStack": [
+            "Python"
+          ],
+          "commits90d": 0,
+          "activeWeeks90d": 0,
+          "suspiciousPadding": false,
+          "stale": true,
+          "hasReadme": true,
+          "readmeTruncated": false,
+          "score": 7.181580750534211
+        },
+        {
+          "name": "rectpack",
+          "description": "Python 2D rectangle packing library",
+          "repoUrl": "https://github.com/secnot/rectpack",
+          "isLive": false,
+          "detectedStack": [
+            "Python"
+          ],
+          "commits90d": 0,
+          "activeWeeks90d": 0,
+          "suspiciousPadding": false,
+          "stale": true,
+          "hasReadme": true,
+          "readmeTruncated": false,
+          "score": 7.834294400818704
+        },
+        {
+          "name": "leaky_diode",
+          "description": "Leaky diode is a data exfiltration test tool for data diodes.",
+          "repoUrl": "https://github.com/secnot/leaky_diode",
+          "isLive": false,
+          "detectedStack": [
+            "Python"
+          ],
+          "commits90d": 0,
+          "activeWeeks90d": 0,
+          "suspiciousPadding": false,
+          "stale": true,
+          "hasReadme": true,
+          "readmeTruncated": false,
+          "score": 5.000087718036195
+        }
+      ],
+      "contributions": [
+        {
+          "repoOwner": "kivy-garden",
+          "repoName": "garden.circulardatetimepicker",
+          "repoUrl": "https://github.com/kivy-garden/garden.circulardatetimepicker",
+          "prTitle": "Add python3 support",
+          "prUrl": "https://github.com/kivy-garden/garden.circulardatetimepicker/pull/8",
+          "mergedAt": "2019-07-05 09:01:11 +0000 UTC",
+          "mergedPrCount": 3,
+          "contributorCount": 2,
+          "stars": 15
+        }
+      ],
+      "reasoning": {
+        "score": 1.4,
+        "breakdown": {
+          "stackMatch": 0,
+          "stackCoverage": [
+            {
+              "technology": "Next.js",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            },
+            {
+              "technology": "Go",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            },
+            {
+              "technology": "Postgres",
+              "percentage": 0,
+              "repoCount": 0,
+              "repos": null
+            }
+          ],
+          "evidenceStrength": 1.3,
+          "contributions": 0,
+          "llmJudgment": 3
+        },
+        "stackMatch": "weak",
+        "positiveReasons": [
+          {
+            "point": "Demonstrates strong Python library development with a well-structured, tested, and documented Django model field (django-isbn-field) that supports multiple Django versions and includes internationalization.",
+            "evidence": [
+              {
+                "project": "django-isbn-field",
+                "repoUrl": "https://github.com/secnot/django-isbn-field"
+              }
+            ]
+          },
+          {
+            "point": "Shows sustained external contributions with 3 merged PRs to a maintained open-source project (garden.circulardatetimepicker), including a significant Python 3 compatibility update.",
+            "evidence": []
+          },
+          {
+            "point": "Evidence of algorithmic problem-solving with a production-ready Python library (rectpack) for 2D rectangle packing, including comprehensive test coverage and algorithmic variants.",
+            "evidence": [
+              {
+                "project": "rectpack",
+                "repoUrl": "https://github.com/secnot/rectpack"
+              }
+            ]
+          }
+        ],
+        "negativeReasons": [
+          {
+            "point": "No evidence of the required stack (Next.js, Go, or Postgres) in any repo or contribution.",
+            "evidence": []
+          },
+          {
+            "point": "All repos are Python-only, with no multi-language or full-stack projects.",
+            "evidence": [
+              {
+                "project": "django-isbn-field",
+                "repoUrl": "https://github.com/secnot/django-isbn-field"
+              },
+              {
+                "project": "rectpack",
+                "repoUrl": "https://github.com/secnot/rectpack"
+              },
+              {
+                "project": "leaky_diode",
+                "repoUrl": "https://github.com/secnot/leaky_diode"
+              }
+            ]
+          },
+          {
+            "point": "No recent commits (last 90 days) across all repos, indicating stagnation or abandonment.",
+            "evidence": [
+              {
+                "project": "django-isbn-field",
+                "repoUrl": "https://github.com/secnot/django-isbn-field"
+              },
+              {
+                "project": "rectpack",
+                "repoUrl": "https://github.com/secnot/rectpack"
+              },
+              {
+                "project": "leaky_diode",
+                "repoUrl": "https://github.com/secnot/leaky_diode"
+              }
+            ]
+          },
+          {
+            "point": "Projects are niche or specialized (ISBN validation, data exfiltration testing, rectangle packing) with no clear production-scale adoption or user base beyond academic/technical interest.",
+            "evidence": [
+              {
+                "project": "django-isbn-field",
+                "repoUrl": "https://github.com/secnot/django-isbn-field"
+              },
+              {
+                "project": "rectpack",
+                "repoUrl": "https://github.com/secnot/rectpack"
+              },
+              {
+                "project": "leaky_diode",
+                "repoUrl": "https://github.com/secnot/leaky_diode"
+              }
+            ]
+          }
+        ],
+        "hasTrustFlag": false
+      },
+      "warning": "repos were found but none match the job's required stack"
+    }
+  ]
+}

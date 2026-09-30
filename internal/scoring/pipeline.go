@@ -162,6 +162,9 @@ func buildRepoEvidenceSources(repos []ranking.ScoredRepo) []llm.RepoEvidenceSour
 		if r.Liveness != nil && r.Liveness.IsLive {
 			src.LiveURL = r.Liveness.URL
 		}
+		if r.Release != nil {
+			src.ReleaseURL = r.Release.URL
+		}
 		sources = append(sources, src)
 	}
 	return sources
@@ -231,6 +234,11 @@ func BuildReport(candidateID, jobID string, jobStack []string, result *Result) *
 			if r.Liveness.IsLive {
 				summary.LiveURL = r.Liveness.URL
 			}
+		}
+		if r.Release != nil {
+			summary.ReleaseURL = r.Release.URL
+			summary.ReleaseTag = r.Release.Tag
+			summary.ReleasedAt = r.Release.PublishedAt.Format(time.RFC3339)
 		}
 		evidence = append(evidence, summary)
 	}
@@ -302,9 +310,10 @@ func convertReasons(reasons []llm.ResolvedReason) []models.ReasonSummary {
 		evidence := make([]models.EvidenceLinkSummary, 0, len(r.Evidence))
 		for _, e := range r.Evidence {
 			evidence = append(evidence, models.EvidenceLinkSummary{
-				Project: e.Project,
-				RepoURL: e.RepoURL,
-				LiveURL: e.LiveURL,
+				Project:    e.Project,
+				RepoURL:    e.RepoURL,
+				LiveURL:    e.LiveURL,
+				ReleaseURL: e.ReleaseURL,
 			})
 		}
 		out = append(out, models.ReasonSummary{Point: r.Point, Evidence: evidence})

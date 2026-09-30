@@ -18,8 +18,9 @@ type Config struct {
 	// rather than funneling all scoring requests through a single key.
 	MistralAPIKeys []string
 
-	GithubToken string
-	Port        string
+	GithubToken     string
+	Port            string
+	DashboardSecret string
 }
 
 // Load reads a .env file if present (ignored if missing, e.g. in production
@@ -31,8 +32,9 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		DatabaseURL:    os.Getenv("DATABASE_URL"),
 		MistralAPIKeys: parseCommaSeparated(os.Getenv("MISTRAL_API_KEY")),
-		GithubToken:    os.Getenv("GITHUB_TOKEN"),
-		Port:           os.Getenv("PORT"),
+		GithubToken:     os.Getenv("GITHUB_TOKEN"),
+		Port:            os.Getenv("PORT"),
+		DashboardSecret: os.Getenv("DASHBOARD_SECRET"),
 	}
 
 	if cfg.Port == "" {
@@ -48,6 +50,9 @@ func Load() (*Config, error) {
 	}
 	if cfg.GithubToken == "" {
 		missing = append(missing, "GITHUB_TOKEN")
+	}
+	if cfg.DashboardSecret == "" {
+		missing = append(missing, "DASHBOARD_SECRET")
 	}
 	if len(missing) > 0 {
 		return nil, fmt.Errorf("missing required env vars: %v", missing)

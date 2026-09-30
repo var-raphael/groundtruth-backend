@@ -132,7 +132,7 @@ func (h *OutreachHandler) GenerateDraft(w http.ResponseWriter, r *http.Request) 
 
 	draft, err := outreach.BuildDraft(r.Context(), h.MistralClient, report, *job)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeDraftError(w, err)
 		return
 	}
 
@@ -192,6 +192,18 @@ func (h *OutreachHandler) SaveDraft(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, saved)
+}
+
+func writeDraftError(w http.ResponseWriter, err error) {
+	log.Printf("outreach: drafting failed: %v", err)
+	msg := "Couldn't draft the email right now. Please try again."
+	status := http.StatusInternalServerError
+	e := err.Error()
+	if strings.Contains(e, "mistral api returned status 429") || strings.Contains(e, "mistral api returned status 5") {
+		msg = "The AI service is busy right now. Please try again in a minute."
+		status = http.StatusServiceUnavailable
+	}
+	writeJSON(w, status, map[string]string{"error": msg})
 }
 
 func writeDenied(w http.ResponseWriter, d plans.Decision) {

@@ -80,6 +80,8 @@ func buildUserPrompt(report *models.CandidateReport, job models.Job) string {
 			fmt.Fprintf(&b, "   - project: %s", ev.Project)
 			if ev.LiveURL != "" {
 				fmt.Fprintf(&b, " (live: %s)", ev.LiveURL)
+			} else if ev.ReleaseURL != "" {
+				fmt.Fprintf(&b, " (latest release: %s)", ev.ReleaseURL)
 			}
 			fmt.Fprintln(&b)
 		}

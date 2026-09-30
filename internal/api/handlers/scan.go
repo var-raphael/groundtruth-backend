@@ -40,6 +40,11 @@ func (h *ScanHandler) TriggerScan(w http.ResponseWriter, r *http.Request) {
 	h.rescanCandidate(w, r, candidateID, force)
 }
 
+func (h *ScanHandler) RescanByPath(w http.ResponseWriter, r *http.Request) {
+	force := r.URL.Query().Get("force") != "false"
+	h.rescanCandidate(w, r, r.PathValue("id"), force)
+}
+
 func (h *ScanHandler) rescanCandidate(w http.ResponseWriter, r *http.Request, candidateID string, force bool) {
 	recruiterID, ok := middleware.RecruiterIDFromContext(r.Context())
 	if !ok {
@@ -89,6 +94,11 @@ func (h *ScanHandler) rescanCandidate(w http.ResponseWriter, r *http.Request, ca
 	}
 	if !decision.Allowed {
 		writeDenied(w, decision)
+		return
+	}
+
+	if err := queries.UpdateCandidateStatus(r.Context(), h.Pool, candidateID, models.StatusExtracting); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

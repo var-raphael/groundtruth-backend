@@ -2,6 +2,7 @@ package scoring
 
 import (
 	"math"
+	"sort"
 
 	ghextractor "github.com/var-raphael/groundtruth/internal/extractor/github"
 	"github.com/var-raphael/groundtruth/internal/ranking"
@@ -53,42 +54,54 @@ func ComputeFinalScore(topRepos []ranking.ScoredRepo, contributions []ghextracto
 	}
 }
 
-const minContributorsForRealContribution = 5
-const contributionBaseScore = 6.0
-
-const substantialContributionMinContributors = 20
-const substantialContributionMinStars = 100
-const substantialContributionCountForMaxScore = 3
+const contributionMinContributors = 20
+const contributionMinStars = 100
+const contributionMaxRanked = 5
+const contributionQuantityWeight = 0.35
+const contributionCredibilityWeight = 1 - contributionQuantityWeight
 
 func contributionsScore(contributions []ghextractor.RawContribution) float64 {
-	maxContributors := 0
-	qualifying := 0
-	substantial := 0
+	var qualifying []ghextractor.RawContribution
 	for _, c := range contributions {
-		if c.ContributorCount < minContributorsForRealContribution {
-			continue
-		}
-		qualifying++
-		if c.ContributorCount > maxContributors {
-			maxContributors = c.ContributorCount
-		}
-		if c.ContributorCount >= substantialContributionMinContributors && c.Stars >= substantialContributionMinStars {
-			substantial++
+		if c.ContributorCount >= contributionMinContributors && c.Stars >= contributionMinStars {
+			qualifying = append(qualifying, c)
 		}
 	}
-	if qualifying == 0 {
+	if len(qualifying) == 0 {
 		return 0
 	}
-	if substantial >= substantialContributionCountForMaxScore {
-		return 10
+
+	sort.Slice(qualifying, func(i, j int) bool {
+		return contributionCredibility(qualifying[i]) > contributionCredibility(qualifying[j])
+	})
+	best := qualifying
+	if len(best) > contributionMaxRanked {
+		best = best[:contributionMaxRanked]
 	}
 
-	bonus := math.Log10(float64(maxContributors)+1) - math.Log10(float64(minContributorsForRealContribution)+1)
-	score := contributionBaseScore + bonus
+	quantity := float64(len(qualifying)) / float64(contributionMaxRanked)
+	if quantity > 1 {
+		quantity = 1
+	}
+
+	var totalCredibility float64
+	for _, c := range best {
+		totalCredibility += contributionCredibility(c)
+	}
+	avgCredibility := totalCredibility / float64(len(best))
+
+	score := 10 * (contributionQuantityWeight*quantity + contributionCredibilityWeight*avgCredibility)
 	if score > 10 {
 		score = 10
 	}
 	return score
+}
+
+func contributionCredibility(c ghextractor.RawContribution) float64 {
+	prTerm := math.Log10(float64(c.MergedPRCount)+1) / math.Log10(51) * 0.4
+	contributorTerm := math.Log10(float64(c.ContributorCount)+1) / math.Log10(501) * 0.3
+	starTerm := math.Log10(float64(c.Stars)+1) / math.Log10(100001) * 0.3
+	return prTerm + contributorTerm + starTerm
 }
 
 func combinedStackMatch(repos []ranking.ScoredRepo, jobStack []string) float64 {

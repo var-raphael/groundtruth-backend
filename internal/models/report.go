@@ -6,8 +6,11 @@ type CandidateReport struct {
 	CandidateID string    `json:"candidateId"`
 	JobID       string    `json:"jobId"`
 	GeneratedAt time.Time `json:"generatedAt"`
+	LastScannedAt time.Time `json:"lastScannedAt"`
 
 	Candidate CandidateSummary `json:"candidate"`
+
+	OverlapHours int `json:"overlapHours"`
 
 	Evidence []RepoEvidenceSummary `json:"evidence"`
 
@@ -16,6 +19,12 @@ type CandidateReport struct {
 	Reasoning ReasoningSummary `json:"reasoning"`
 
 	Warning string `json:"warning,omitempty"`
+
+	// Pending is true when the candidate hasn't finished scoring yet. When
+	// true, Evidence/Contributions/Reasoning are zero-valued — callers
+	// should render a scanning/queued placeholder using Candidate.Status
+	// instead of report data.
+	Pending bool `json:"pending,omitempty"`
 }
 
 type EvidenceReport struct {
@@ -59,6 +68,9 @@ type RepoEvidenceSummary struct {
 	RepoURL     string `json:"repoUrl"`
 	LiveURL     string `json:"liveUrl,omitempty"`
 	IsLive      bool   `json:"isLive"`
+	ReleaseURL  string `json:"releaseUrl,omitempty"`
+	ReleaseTag  string `json:"releaseTag,omitempty"`
+	ReleasedAt  string `json:"releasedAt,omitempty"`
 
 	DetectedStack      []string `json:"detectedStack,omitempty"`
 	DetectedStackError string   `json:"detectedStackError,omitempty"`
@@ -110,9 +122,10 @@ type ReasonSummary struct {
 }
 
 type EvidenceLinkSummary struct {
-	Project string `json:"project"`
-	RepoURL string `json:"repoUrl,omitempty"`
-	LiveURL string `json:"liveUrl,omitempty"`
+	Project    string `json:"project"`
+	RepoURL    string `json:"repoUrl,omitempty"`
+	LiveURL    string `json:"liveUrl,omitempty"`
+	ReleaseURL string `json:"releaseUrl,omitempty"`
 }
 
 type ContributionSummary struct {

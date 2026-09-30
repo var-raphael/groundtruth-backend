@@ -22,8 +22,8 @@ type Job struct {
 
 	MinYearsExperience int `json:"min_years_experience" db:"min_years_experience"`
 
-	Timezone        string `json:"timezone" db:"timezone"`
-	MinOverlapHours int    `json:"min_overlap_hours" db:"min_overlap_hours"`
+	Timezones       []string `json:"timezones" db:"timezones"`
+	MinOverlapHours int      `json:"min_overlap_hours" db:"min_overlap_hours"`
 
 	CandidateLimit int `json:"candidate_limit" db:"candidate_limit"`
 

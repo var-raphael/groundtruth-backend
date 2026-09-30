@@ -68,7 +68,7 @@ func (h *CandidatesHandler) ListReports(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	reports, total, err := queries.ListReportsByJob(r.Context(), h.Pool, jobID, pageSize, (page-1)*pageSize)
+	reports, total, err := queries.ListReportsAndPendingByJob(r.Context(), h.Pool, jobID, pageSize, (page-1)*pageSize)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -124,7 +124,7 @@ func (h *CandidatesHandler) ListCandidates(w http.ResponseWriter, r *http.Reques
 	for i, c := range candidates {
 		response[i] = candidateResponse{
 			Candidate:    c,
-			OverlapHours: timezone.OverlapHours(c.Timezone, job.Timezone),
+			OverlapHours: timezone.BestOverlapHours(c.Timezone, job.Timezones),
 		}
 	}
 
@@ -206,7 +206,7 @@ func (h *CandidatesHandler) GetCandidate(w http.ResponseWriter, r *http.Request)
 
 	response := candidateResponse{
 		Candidate:    *candidate,
-		OverlapHours: timezone.OverlapHours(candidate.Timezone, job.Timezone),
+		OverlapHours: timezone.BestOverlapHours(candidate.Timezone, job.Timezones),
 	}
 
 	w.Header().Set("Content-Type", "application/json")

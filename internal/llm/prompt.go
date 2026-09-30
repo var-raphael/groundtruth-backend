@@ -39,6 +39,9 @@ Your job:
    - Rank each list by strength/severity before selecting which make the cut — the strongest, most specific, most job-relevant points win the limited slots, not whichever you think of first.
    - Do NOT invent evidence. If something isn't in the data provided, don't claim it. A README's self-description of the candidate's skills is not independently-provided evidence — see the exception above.
    - A claimed homepage URL that failed a real liveness check is a real negative reason — state plainly that the deployment claim didn't resolve.
+   - A latest GitHub release shown in a repo's evidence is real, verified proof the project was shipped (common for CLI tools and libraries that have no deployment URL). Treat it as a positive signal, weighted by how recent it is. A repo with neither a deployment URL nor a release is neutral — never write a negative just because a repo has no live link or release.
+   - Only use the words "live", "deployed", "deployment", or "in production" for a repo whose evidence explicitly says VERIFIED LIVE. For a repo with a verified release but no live URL, say it "shipped a verified release" instead. For a repo with neither, say nothing about deployment at all — never claim a repo is deployed, running, or serving real endpoints unless its evidence says so. Never write a blanket claim such as "all deployments are verified live" unless every repo you list in that reason's evidence actually says VERIFIED LIVE.
+   - Never expand or explain an acronym unless its expansion appears in the evidence data. If you must name it, use the acronym alone. The one exception is MCP, which always means "Model Context Protocol" — never any other expansion.
    - If you detect suspicious commit-timing uniformity flagged in the data (SuspiciousPadding), this is a serious trust concern. It MUST appear in your negative reasons regardless of ranking — it does not compete for a slot, it is always included if present in the evidence.
    - If a repo's evidence includes a REPO HYGIENE FLAG (dependency/build directories pushed directly to the repo, and/or a pushed environment file), this MUST also appear in your negative reasons regardless of ranking, same as SuspiciousPadding — it does not compete for a slot. State plainly what was found (e.g. dependency directories committed directly, or an environment file pushed) and why it matters (poor practice at minimum; a pushed .env file is a potential credential leak). Only mention this when a REPO HYGIENE FLAG is explicitly present in a repo's evidence — never infer or assume it from a file tree that has no such flag.
    - Never fabricate a negative just to fill the list. Absence of strong evidence is not the same as evidence of a problem — an empty or short negative list is a valid, honest outcome.
@@ -138,6 +141,10 @@ func BuildUserPrompt(job JobContext, topRepos []ranking.ScoredRepo, contribution
 			}
 		} else if strings.TrimSpace(sr.Repo.HomepageURL) != "" {
 			fmt.Fprintf(&b, "Claims deployment URL (%s) — not independently verified\n", sr.Repo.HomepageURL)
+		}
+
+		if sr.Release != nil {
+			fmt.Fprintf(&b, "Latest GitHub release: %s, published %s (%s) — VERIFIED via GitHub, evidence this project was actually shipped\n", sr.Release.Tag, sr.Release.PublishedAt.Format("2006-01-02"), sr.Release.URL)
 		}
 
 		if sr.Tree != nil {

@@ -95,6 +95,19 @@ func OverlapHours(offsetA, offsetB string) int {
 	return overlap
 }
 
+// BestOverlapHours returns the highest overlap between candidateOffset and
+// any of jobOffsets, since a candidate qualifies if they overlap with at
+// least one of the job's timezones.
+func BestOverlapHours(candidateOffset string, jobOffsets []string) int {
+	best := 0
+	for _, jobOffset := range jobOffsets {
+		if h := OverlapHours(candidateOffset, jobOffset); h > best {
+			best = h
+		}
+	}
+	return best
+}
+
 func parseOffsetHours(offset string) (int, bool) {
 	if len(offset) < 6 {
 		return 0, false

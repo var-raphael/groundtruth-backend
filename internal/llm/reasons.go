@@ -38,9 +38,10 @@ func VerifyTrustFlagHonored(reasoning *JobReasoning, evidenceWarrantedFlag bool)
 }
 
 type RepoEvidenceSource struct {
-	Name    string
-	RepoURL string
-	LiveURL string
+	Name       string
+	RepoURL    string
+	LiveURL    string
+	ReleaseURL string
 }
 
 func ResolveEvidence(reasoning *JobReasoning, repoSources []RepoEvidenceSource) (*ResolvedJobReasoning, []string) {
@@ -63,9 +64,10 @@ func ResolveEvidence(reasoning *JobReasoning, repoSources []RepoEvidenceSource) 
 					continue
 				}
 				links = append(links, EvidenceLink{
-					Project: src.Name,
-					RepoURL: src.RepoURL,
-					LiveURL: src.LiveURL,
+					Project:    src.Name,
+					RepoURL:    src.RepoURL,
+					LiveURL:    src.LiveURL,
+					ReleaseURL: src.ReleaseURL,
 				})
 			}
 			resolved = append(resolved, ResolvedReason{Point: r.Point, Evidence: links})
