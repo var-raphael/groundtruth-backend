@@ -30,8 +30,8 @@ func Load() (*Config, error) {
 	_ = godotenv.Overload()
 
 	cfg := &Config{
-		DatabaseURL:    os.Getenv("DATABASE_URL"),
-		MistralAPIKeys: parseCommaSeparated(os.Getenv("MISTRAL_API_KEY")),
+		DatabaseURL:     os.Getenv("DATABASE_URL"),
+		MistralAPIKeys:  parseCommaSeparated(os.Getenv("MISTRAL_API_KEY")),
 		GithubToken:     os.Getenv("GITHUB_TOKEN"),
 		Port:            os.Getenv("PORT"),
 		DashboardSecret: os.Getenv("DASHBOARD_SECRET"),

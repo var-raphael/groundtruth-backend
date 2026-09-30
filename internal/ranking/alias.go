@@ -13,10 +13,10 @@ var stackAliases = map[string]string{
 	"typescript": "typescript",
 
 	// Node.js
-	"node":     "node.js",
-	"nodejs":   "node.js",
-	"node js":  "node.js",
-	"node.js":  "node.js",
+	"node":    "node.js",
+	"nodejs":  "node.js",
+	"node js": "node.js",
+	"node.js": "node.js",
 
 	// React
 	"react":    "react",
@@ -25,39 +25,39 @@ var stackAliases = map[string]string{
 	"react.js": "react",
 
 	// Next.js
-	"next":     "next.js",
-	"nextjs":   "next.js",
-	"next js":  "next.js",
-	"next.js":  "next.js",
+	"next":    "next.js",
+	"nextjs":  "next.js",
+	"next js": "next.js",
+	"next.js": "next.js",
 
 	// Vue
-	"vue":      "vue.js",
-	"vuejs":    "vue.js",
-	"vue js":   "vue.js",
-	"vue.js":   "vue.js",
+	"vue":    "vue.js",
+	"vuejs":  "vue.js",
+	"vue js": "vue.js",
+	"vue.js": "vue.js",
 
 	// Nuxt
-	"nuxt":     "nuxt.js",
-	"nuxtjs":   "nuxt.js",
-	"nuxt js":  "nuxt.js",
-	"nuxt.js":  "nuxt.js",
+	"nuxt":    "nuxt.js",
+	"nuxtjs":  "nuxt.js",
+	"nuxt js": "nuxt.js",
+	"nuxt.js": "nuxt.js",
 
 	// Angular
 	"angular":   "angular",
 	"angularjs": "angular",
 
 	// Svelte
-	"svelte":      "svelte",
-	"sveltekit":   "sveltekit",
-	"svelte kit":  "sveltekit",
+	"svelte":     "svelte",
+	"sveltekit":  "sveltekit",
+	"svelte kit": "sveltekit",
 
 	// Go
-	"go":      "golang",
-	"golang":  "golang",
+	"go":     "golang",
+	"golang": "golang",
 
 	// Python
-	"py":      "python",
-	"python":  "python",
+	"py":     "python",
+	"python": "python",
 
 	// PostgreSQL
 	"postgres":   "postgresql",
@@ -180,7 +180,7 @@ var stackAliases = map[string]string{
 	"flask": "flask",
 
 	// Spring Boot
-	"springboot": "spring boot",
+	"springboot":  "spring boot",
 	"spring boot": "spring boot",
 
 	// Supabase

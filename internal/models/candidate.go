@@ -31,12 +31,12 @@ type Candidate struct {
 type CandidateStatus string
 
 const (
-	StatusQueued    CandidateStatus = "queued"     // applied, not yet processed (e.g. over plan limit)
+	StatusQueued     CandidateStatus = "queued"     // applied, not yet processed (e.g. over plan limit)
 	StatusExtracting CandidateStatus = "extracting" // github extraction in progress
-	StatusExtracted CandidateStatus = "extracted"  // github evidence saved, LLM scoring not yet run
-	StatusScoring   CandidateStatus = "scoring"     // worker actively running the LLM scoring step
-	StatusScored    CandidateStatus = "scored"      // has a JobReasoning result
-	StatusFailed    CandidateStatus = "failed"      // pipeline errored, needs retry/investigation
+	StatusExtracted  CandidateStatus = "extracted"  // github evidence saved, LLM scoring not yet run
+	StatusScoring    CandidateStatus = "scoring"    // worker actively running the LLM scoring step
+	StatusScored     CandidateStatus = "scored"     // has a JobReasoning result
+	StatusFailed     CandidateStatus = "failed"     // pipeline errored, needs retry/investigation
 )
 
 func (c Candidate) ToSummary() CandidateSummary {

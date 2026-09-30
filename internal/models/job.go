@@ -11,11 +11,11 @@ const (
 )
 
 type Job struct {
-	ID          string       `json:"id" db:"id"`
-	RecruiterID string       `json:"recruiter_id" db:"recruiter_id"`
-	Title       string       `json:"title" db:"title"`
-	Description string       `json:"description" db:"description"`
-	Stack       []string     `json:"stack" db:"stack"`
+	ID          string   `json:"id" db:"id"`
+	RecruiterID string   `json:"recruiter_id" db:"recruiter_id"`
+	Title       string   `json:"title" db:"title"`
+	Description string   `json:"description" db:"description"`
+	Stack       []string `json:"stack" db:"stack"`
 
 	LocationMode      LocationMode `json:"location_mode" db:"location_mode"`
 	LocationCountries []string     `json:"location_countries" db:"location_countries"`

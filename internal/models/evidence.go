@@ -12,8 +12,8 @@ type RepoEvidence struct {
 	Commits90d   int    `json:"commits_90d"`
 	LastCommitAt string `json:"last_commit_at"`
 
-	HasReadme    bool `json:"has_readme"`
-	ReadmeThin   bool `json:"readme_thin"` // present but too short to count for much
+	HasReadme  bool `json:"has_readme"`
+	ReadmeThin bool `json:"readme_thin"` // present but too short to count for much
 
 	// authenticity signal from activity.go's pattern check
 	SuspiciousPadding bool `json:"suspicious_padding"`
@@ -40,7 +40,7 @@ type JobReasoning struct {
 	CandidateID string `json:"candidate_id"`
 	JobID       string `json:"job_id"`
 
-	Score      int    `json:"score"` // 0-10
+	Score      int    `json:"score"`       // 0-10
 	StackMatch string `json:"stack_match"` // "strong" | "partial" | "weak"
 
 	PositiveReasons []Reason `json:"positive_reasons"` // max 10, ranked by strength

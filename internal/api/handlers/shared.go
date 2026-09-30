@@ -18,18 +18,18 @@ type SharedHandler struct {
 }
 
 type sharedCandidateView struct {
-	CandidateID    string                        `json:"candidateId"`
-	Name           string                        `json:"name"`
-	GithubUsername string                        `json:"githubUsername"`
-	LinkedIn       string                        `json:"linkedin,omitempty"`
-	X              string                        `json:"x,omitempty"`
-	Portfolio      string                        `json:"portfolio,omitempty"`
-	Status         string                        `json:"status"`
-	Pending        bool                          `json:"pending,omitempty"`
-	Evidence       []models.RepoEvidenceSummary  `json:"evidence,omitempty"`
-	Contributions  []models.ContributionSummary  `json:"contributions,omitempty"`
-	Reasoning      *models.ReasoningSummary      `json:"reasoning,omitempty"`
-	Warning        string                        `json:"warning,omitempty"`
+	CandidateID    string                       `json:"candidateId"`
+	Name           string                       `json:"name"`
+	GithubUsername string                       `json:"githubUsername"`
+	LinkedIn       string                       `json:"linkedin,omitempty"`
+	X              string                       `json:"x,omitempty"`
+	Portfolio      string                       `json:"portfolio,omitempty"`
+	Status         string                       `json:"status"`
+	Pending        bool                         `json:"pending,omitempty"`
+	Evidence       []models.RepoEvidenceSummary `json:"evidence,omitempty"`
+	Contributions  []models.ContributionSummary `json:"contributions,omitempty"`
+	Reasoning      *models.ReasoningSummary     `json:"reasoning,omitempty"`
+	Warning        string                       `json:"warning,omitempty"`
 }
 
 type sharedJobView struct {
@@ -39,9 +39,9 @@ type sharedJobView struct {
 }
 
 type sharedViewResponse struct {
-	Job                    sharedJobView          `json:"job"`
-	Candidates             []sharedCandidateView  `json:"candidates"`
-	OutreachRemaining      int                    `json:"outreachRemaining"`
+	Job               sharedJobView         `json:"job"`
+	Candidates        []sharedCandidateView `json:"candidates"`
+	OutreachRemaining int                   `json:"outreachRemaining"`
 }
 
 func (h *SharedHandler) resolveActiveLink(w http.ResponseWriter, r *http.Request) *queries.JobShareLink {

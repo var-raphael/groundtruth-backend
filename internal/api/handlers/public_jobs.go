@@ -30,10 +30,10 @@ type publicCandidateInput struct {
 }
 
 type createPublicJobRequest struct {
-	Title       string                  `json:"title"`
-	Description string                  `json:"description"`
-	Stack       []string                `json:"stack"`
-	Candidates  []publicCandidateInput  `json:"candidates"`
+	Title       string                 `json:"title"`
+	Description string                 `json:"description"`
+	Stack       []string               `json:"stack"`
+	Candidates  []publicCandidateInput `json:"candidates"`
 }
 
 func (h *PublicJobsHandler) CreatePublicJob(w http.ResponseWriter, r *http.Request) {

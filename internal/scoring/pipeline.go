@@ -320,5 +320,3 @@ func convertReasons(reasons []llm.ResolvedReason) []models.ReasonSummary {
 	}
 	return out
 }
-
-

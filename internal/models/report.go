@@ -3,9 +3,9 @@ package models
 import "time"
 
 type CandidateReport struct {
-	CandidateID string    `json:"candidateId"`
-	JobID       string    `json:"jobId"`
-	GeneratedAt time.Time `json:"generatedAt"`
+	CandidateID   string    `json:"candidateId"`
+	JobID         string    `json:"jobId"`
+	GeneratedAt   time.Time `json:"generatedAt"`
 	LastScannedAt time.Time `json:"lastScannedAt"`
 
 	Candidate CandidateSummary `json:"candidate"`
@@ -91,9 +91,9 @@ type RepoEvidenceSummary struct {
 }
 
 type ReasoningSummary struct {
-	Score      float64             `json:"score"`
+	Score      float64               `json:"score"`
 	Breakdown  ScoreBreakdownSummary `json:"breakdown"`
-	StackMatch string              `json:"stackMatch"`
+	StackMatch string                `json:"stackMatch"`
 
 	PositiveReasons []ReasonSummary `json:"positiveReasons"`
 	NegativeReasons []ReasonSummary `json:"negativeReasons"`
@@ -117,7 +117,7 @@ type StackCoverageSummary struct {
 }
 
 type ReasonSummary struct {
-	Point    string                 `json:"point"`
+	Point    string                `json:"point"`
 	Evidence []EvidenceLinkSummary `json:"evidence"`
 }
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	ghextractor "github.com/var-raphael/groundtruth/internal/extractor/github"
 	"github.com/google/go-github/v66/github"
+	ghextractor "github.com/var-raphael/groundtruth/internal/extractor/github"
 )
 
 const minCommitsAheadToCount = 3
