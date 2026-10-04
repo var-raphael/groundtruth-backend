@@ -68,3 +68,32 @@ func GetRecruiterByGoogleID(ctx context.Context, pool *pgxpool.Pool, googleID st
 	}
 	return &r, nil
 }
+
+func FindOrCreateRecruiterFromAuth(ctx context.Context, pool *pgxpool.Pool, authUserID, email, name string) (*Recruiter, error) {
+	existing, err := GetRecruiterByGoogleID(ctx, pool, authUserID)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil {
+		return existing, nil
+	}
+
+	const adopt = `
+		UPDATE recruiters
+		SET google_id = $1, name = CASE WHEN name = '' THEN $3 ELSE name END
+		WHERE lower(email) = lower($2)
+		RETURNING id, google_id, email, name, plan, created_at`
+
+	var r Recruiter
+	err = pool.QueryRow(ctx, adopt, authUserID, email, name).Scan(
+		&r.ID, &r.GoogleID, &r.Email, &r.Name, &r.Plan, &r.CreatedAt,
+	)
+	if err == nil {
+		return &r, nil
+	}
+	if err != pgx.ErrNoRows {
+		return nil, fmt.Errorf("linking recruiter by email: %w", err)
+	}
+
+	return UpsertRecruiterFromGoogle(ctx, pool, authUserID, email, name)
+}

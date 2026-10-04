@@ -2,16 +2,20 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/var-raphael/groundtruth/internal/auth"
 	"github.com/var-raphael/groundtruth/internal/db/queries"
 	"github.com/var-raphael/groundtruth/internal/models"
 	"github.com/var-raphael/groundtruth/internal/timezone"
 )
 
 type ApplyHandler struct {
-	Pool *pgxpool.Pool
+	Pool     *pgxpool.Pool
+	Verifier *auth.Verifier
 }
 
 type applyRequest struct {
@@ -47,6 +51,12 @@ func (h *ApplyHandler) Apply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.submit(w, r, job, req)
+}
+
+func (h *ApplyHandler) submit(w http.ResponseWriter, r *http.Request, job *models.Job, req applyRequest) {
+	jobID := job.ID
+
 	if req.FullName == "" {
 		http.Error(w, "full_name is required", http.StatusBadRequest)
 		return
@@ -80,14 +90,24 @@ func (h *ApplyHandler) Apply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	applied, err := queries.HasApplied(r.Context(), h.Pool, jobID, req.GithubID, req.Email)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if applied {
+		http.Error(w, "you have already applied to this job", http.StatusConflict)
+		return
+	}
+
 	count, err := queries.CountCandidatesForJob(r.Context(), h.Pool, jobID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	status := models.StatusQueued
 	if count >= job.CandidateLimit {
-		http.Error(w, "this job has reached its candidate limit", http.StatusConflict)
-		return
+		status = models.StatusUnscanned
 	}
 
 	tz := timezone.Derive(req.City)
@@ -106,11 +126,16 @@ func (h *ApplyHandler) Apply(w http.ResponseWriter, r *http.Request) {
 		LinkedIn:        nullableString(req.LinkedIn),
 		X:               nullableString(req.X),
 		Portfolio:       nullableString(req.Portfolio),
-		Status:          models.StatusQueued,
+		Status:          status,
 	}
 
 	created, err := queries.CreateCandidate(r.Context(), h.Pool, candidate)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			http.Error(w, "you have already applied to this job", http.StatusConflict)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -125,4 +150,35 @@ func nullableString(s string) *string {
 		return nil
 	}
 	return &s
+}
+
+type publicJobResponse struct {
+	ID                string              `json:"id"`
+	Title             string              `json:"title"`
+	Description       string              `json:"description"`
+	Stack             []string            `json:"stack"`
+	LocationMode      models.LocationMode `json:"location_mode"`
+	LocationCountries []string            `json:"location_countries"`
+}
+
+func (h *ApplyHandler) PublicJob(w http.ResponseWriter, r *http.Request) {
+	job, err := queries.GetJob(r.Context(), h.Pool, r.PathValue("id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if job == nil {
+		http.Error(w, "job not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(publicJobResponse{
+		ID:                job.ID,
+		Title:             job.Title,
+		Description:       job.Description,
+		Stack:             job.Stack,
+		LocationMode:      job.LocationMode,
+		LocationCountries: job.LocationCountries,
+	})
 }

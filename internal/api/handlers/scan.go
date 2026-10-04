@@ -72,6 +72,11 @@ func (h *ScanHandler) rescanCandidate(w http.ResponseWriter, r *http.Request, ca
 		return
 	}
 
+	if candidate.Status == models.StatusUnscanned {
+		http.Error(w, "this candidate is over your plan's limit, upgrade to scan them", http.StatusForbidden)
+		return
+	}
+
 	if candidate.Status == models.StatusExtracting || candidate.Status == models.StatusScoring {
 		http.Error(w, "this candidate is already being scanned", http.StatusConflict)
 		return
@@ -97,12 +102,14 @@ func (h *ScanHandler) rescanCandidate(w http.ResponseWriter, r *http.Request, ca
 		return
 	}
 
+	hadEvidence := candidate.Status == models.StatusScored || candidate.Status == models.StatusExtracted
+
 	if err := queries.UpdateCandidateStatus(r.Context(), h.Pool, candidateID, models.StatusExtracting); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	opts := worker.ScanOptions{Force: force, CandidateID: candidateID}
+	opts := worker.ScanOptions{Force: force, CandidateID: candidateID, ReuseEvidence: !force && hadEvidence}
 	go func() {
 		ctx := context.Background()
 		if err := worker.Scan(ctx, h.Pool, h.GithubClient, h.MistralClients, opts); err != nil {

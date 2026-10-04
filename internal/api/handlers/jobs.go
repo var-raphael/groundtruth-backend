@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -87,7 +88,21 @@ func (h *JobsHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limit := plans.For(recruiter.Plan).MaxCandidatesPerJob
+	plan := plans.For(recruiter.Plan)
+
+	if plan.MaxJobs != plans.Unlimited {
+		existing, err := queries.ListJobsByRecruiter(r.Context(), h.Pool, recruiterID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if len(existing) >= plan.MaxJobs {
+			http.Error(w, fmt.Sprintf("your %s plan allows %d job(s), upgrade to create more", plan.Name, plan.MaxJobs), http.StatusForbidden)
+			return
+		}
+	}
+
+	limit := plan.MaxCandidatesPerJob
 
 	job := &models.Job{
 		RecruiterID:        recruiterID,
@@ -294,4 +309,43 @@ func (h *JobsHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *JobsHandler) PlanInfo(w http.ResponseWriter, r *http.Request) {
+	recruiterID, ok := middleware.RecruiterIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	recruiter, err := queries.GetRecruiterByID(r.Context(), h.Pool, recruiterID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if recruiter == nil {
+		http.Error(w, "recruiter not found", http.StatusUnauthorized)
+		return
+	}
+
+	plan := plans.For(recruiter.Plan)
+
+	var planExpiresAt any
+	hasSubscription := false
+	if billing, err := queries.GetBilling(r.Context(), h.Pool, recruiterID); err == nil && billing != nil {
+		if billing.PlanExpiresAt != nil {
+			planExpiresAt = billing.PlanExpiresAt
+		}
+		hasSubscription = billing.SubscriptionCode != ""
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"plan":                recruiter.Plan,
+		"maxJobs":             plan.MaxJobs,
+		"maxCandidatesPerJob": plan.MaxCandidatesPerJob,
+		"exportFormats":       plan.ExportFormats,
+		"planExpiresAt":       planExpiresAt,
+		"hasSubscription":     hasSubscription,
+	})
 }

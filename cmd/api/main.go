@@ -8,9 +8,12 @@ import (
 
 	"github.com/var-raphael/groundtruth/internal/api/handlers"
 	"github.com/var-raphael/groundtruth/internal/api/middleware"
+	"github.com/var-raphael/groundtruth/internal/auth"
 	"github.com/var-raphael/groundtruth/internal/db"
 	ghextractor "github.com/var-raphael/groundtruth/internal/extractor/github"
 	"github.com/var-raphael/groundtruth/internal/llm"
+	"github.com/var-raphael/groundtruth/internal/paystack"
+	"github.com/var-raphael/groundtruth/internal/secrets"
 	"github.com/var-raphael/groundtruth/internal/worker"
 	"github.com/var-raphael/groundtruth/pkg/config"
 )
@@ -29,6 +32,10 @@ func main() {
 	}
 	defer pool.Close()
 
+	if err := secrets.Init(cfg.TokenEncryptionKey); err != nil {
+		log.Fatalf("%v", err)
+	}
+
 	githubClient := ghextractor.NewClient(cfg.GithubToken)
 
 	mistralClients := make([]*llm.Client, len(cfg.MistralAPIKeys))
@@ -38,13 +45,22 @@ func main() {
 
 	outreachHandler := &handlers.OutreachHandler{Pool: pool, MistralClient: mistralClients[0]}
 	jobsHandler := &handlers.JobsHandler{Pool: pool}
-	applyHandler := &handlers.ApplyHandler{Pool: pool}
+	verifier := auth.NewVerifier(cfg.SupabaseURL)
+	applyHandler := &handlers.ApplyHandler{Pool: pool, Verifier: verifier}
 	candidatesHandler := &handlers.CandidatesHandler{Pool: pool}
 	exportHandler := &handlers.ExportHandler{Pool: pool}
 	scanHandler := &handlers.ScanHandler{Pool: pool, GithubClient: githubClient, MistralClients: mistralClients}
 	shareLinksHandler := &handlers.ShareLinksHandler{Pool: pool}
 	publicJobsHandler := &handlers.PublicJobsHandler{Pool: pool, GithubClient: githubClient, DashboardSecret: cfg.DashboardSecret}
 	sharedHandler := &handlers.SharedHandler{Pool: pool, MistralClient: mistralClients[0]}
+	billingHandler := &handlers.BillingHandler{
+		Pool:        pool,
+		Paystack:    paystack.NewClient(cfg.PaystackSecretKey),
+		ProPlanCode: cfg.PaystackProPlanCode,
+		AppURL:      cfg.AppURL,
+	}
+	adminHandler := &handlers.AdminHandler{Pool: pool, GithubClient: githubClient, AdminEmails: cfg.AdminEmails}
+	showcaseHandler := &handlers.ShowcaseHandler{Pool: pool, MistralClient: mistralClients[0]}
 
 	worker.StartScheduler(ctx, time.Minute, pool, githubClient, mistralClients)
 
@@ -54,11 +70,28 @@ func main() {
 	mux.HandleFunc("PUT /candidates/{id}/outreach", outreachHandler.SaveDraft)
 	mux.HandleFunc("POST /jobs", jobsHandler.CreateJob)
 	mux.HandleFunc("GET /jobs", jobsHandler.ListJobs)
+	mux.HandleFunc("GET /me/plan", jobsHandler.PlanInfo)
 	mux.HandleFunc("GET /jobs/{id}", jobsHandler.GetJob)
 	mux.HandleFunc("PUT /jobs/{id}", jobsHandler.EditJob)
 	mux.HandleFunc("PATCH /jobs/{id}", jobsHandler.EditJob)
 	mux.HandleFunc("DELETE /jobs/{id}", jobsHandler.DeleteJob)
 	mux.HandleFunc("POST /jobs/{id}/apply", applyHandler.Apply)
+	mux.HandleFunc("GET /public/jobs/{id}", applyHandler.PublicJob)
+	mux.HandleFunc("GET /public/jobs/{id}/report", showcaseHandler.Report)
+	mux.HandleFunc("POST /public/candidates/{candidateId}/outreach", showcaseHandler.Outreach)
+	mux.HandleFunc("GET /public/pricing", billingHandler.Pricing)
+	mux.HandleFunc("POST /billing/checkout", billingHandler.Checkout)
+	mux.HandleFunc("POST /billing/cancel", billingHandler.Cancel)
+	mux.HandleFunc("POST /webhooks/paystack", billingHandler.Webhook)
+	mux.HandleFunc("GET /admin/jobs", adminHandler.Guard(adminHandler.ListJobs))
+	mux.HandleFunc("POST /admin/jobs", adminHandler.Guard(adminHandler.CreateJob))
+	mux.HandleFunc("GET /admin/jobs/{id}", adminHandler.Guard(adminHandler.GetJob))
+	mux.HandleFunc("DELETE /admin/jobs/{id}", adminHandler.Guard(adminHandler.DeleteJob))
+	mux.HandleFunc("POST /admin/jobs/{id}/candidates/bulk", adminHandler.Guard(adminHandler.BulkAddCandidates))
+	mux.HandleFunc("GET /public/identity", applyHandler.GetIdentity)
+	mux.HandleFunc("POST /public/identity", applyHandler.LinkIdentity)
+	mux.HandleFunc("POST /public/jobs/{id}/apply", applyHandler.PublicApply)
+	mux.HandleFunc("GET /public/jobs/{id}/application", applyHandler.ApplicationStatus)
 	mux.HandleFunc("GET /jobs/{id}/candidates", candidatesHandler.ListCandidates)
 	mux.HandleFunc("GET /jobs/{id}/reports", candidatesHandler.ListReports)
 	mux.HandleFunc("GET /jobs/{id}/export", exportHandler.ExportJob)
@@ -78,8 +111,7 @@ func main() {
 	})
 
 	log.Printf("listening on :%s", cfg.Port)
-	log.Printf("WARNING: using FakeAuth middleware — all requests authenticated as dev recruiter, replace before production")
-	if err := http.ListenAndServe(":"+cfg.Port, middleware.CORS(middleware.FakeAuth(mux))); err != nil {
+	if err := http.ListenAndServe(":"+cfg.Port, middleware.CORS(middleware.RecruiterAuth(verifier, pool, mux))); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
 }

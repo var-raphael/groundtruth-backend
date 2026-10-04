@@ -8,7 +8,6 @@ import (
 	"github.com/google/go-github/v66/github"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/var-raphael/groundtruth/internal/db/queries"
-	ghextractor "github.com/var-raphael/groundtruth/internal/extractor/github"
 	"github.com/var-raphael/groundtruth/internal/llm"
 	"github.com/var-raphael/groundtruth/internal/models"
 	"github.com/var-raphael/groundtruth/internal/ranking"
@@ -22,8 +21,9 @@ type extractedCandidate struct {
 }
 
 type ScanOptions struct {
-	Force       bool
-	CandidateID string
+	Force         bool
+	CandidateID   string
+	ReuseEvidence bool
 }
 
 func Scan(ctx context.Context, pool *pgxpool.Pool, githubClient *github.Client, mistralClients []*llm.Client, opts ScanOptions) error {
@@ -44,7 +44,7 @@ func Scan(ctx context.Context, pool *pgxpool.Pool, githubClient *github.Client, 
 		extractWG.Add(1)
 		go func(jc jobCandidate) {
 			defer extractWG.Done()
-			runExtractionOrReuse(ctx, pool, githubClient, jc, opts.Force, extracted)
+			runExtractionOrReuse(ctx, pool, githubClient, jc, opts.Force, opts.ReuseEvidence, extracted)
 		}(jc)
 	}
 
@@ -125,11 +125,11 @@ func eligibleCandidates(ctx context.Context, pool *pgxpool.Pool, opts ScanOption
 	return result, nil
 }
 
-func runExtractionOrReuse(ctx context.Context, pool *pgxpool.Pool, githubClient *github.Client, jc jobCandidate, force bool, out chan<- extractedCandidate) {
-	attemptReuse := !force &&
-		jc.candidate.Status != models.StatusQueued &&
-		jc.candidate.Status != models.StatusExtracting &&
-		jc.candidate.Status != models.StatusScoring
+func runExtractionOrReuse(ctx context.Context, pool *pgxpool.Pool, githubClient *github.Client, jc jobCandidate, force bool, reuseEvidence bool, out chan<- extractedCandidate) {
+	attemptReuse := !force && (reuseEvidence ||
+		(jc.candidate.Status != models.StatusQueued &&
+			jc.candidate.Status != models.StatusExtracting &&
+			jc.candidate.Status != models.StatusScoring))
 
 	if attemptReuse {
 		evidence, err := queries.GetCandidateEvidence(ctx, pool, jc.candidate.ID)
@@ -152,10 +152,7 @@ func runExtraction(ctx context.Context, pool *pgxpool.Pool, githubClient *github
 		log.Printf("worker: marking candidate %s extracting: %v", jc.candidate.ID, err)
 	}
 
-	candidateGithubClient := githubClient
-	if jc.candidate.GithubToken != nil && *jc.candidate.GithubToken != "" {
-		candidateGithubClient = ghextractor.NewClient(*jc.candidate.GithubToken)
-	}
+	candidateGithubClient := pickGithubClient(ctx, githubClient, &jc.candidate)
 
 	evidence, err := scoring.ExtractGithubEvidence(ctx, candidateGithubClient, jc.candidate.GithubUsername, jc.job.Stack)
 	if err != nil {
@@ -187,10 +184,7 @@ func runScoring(ctx context.Context, pool *pgxpool.Pool, githubClient *github.Cl
 		Stack:       ec.job.Stack,
 	}
 
-	candidateGithubClient := githubClient
-	if ec.candidate.GithubToken != nil && *ec.candidate.GithubToken != "" {
-		candidateGithubClient = ghextractor.NewClient(*ec.candidate.GithubToken)
-	}
+	candidateGithubClient := pickGithubClient(ctx, githubClient, &ec.candidate)
 
 	allRepos := ec.evidence.TopRepos
 	shortlist := ranking.ShortlistForDetection(allRepos, ec.job.Stack)

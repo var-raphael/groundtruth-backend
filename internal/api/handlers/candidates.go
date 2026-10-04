@@ -27,6 +27,8 @@ type listReportsResponse struct {
 	PageSize   int                      `json:"pageSize"`
 	Total      int                      `json:"total"`
 	TotalPages int                      `json:"totalPages"`
+
+	UnscannedCount int `json:"unscannedCount"`
 }
 
 const defaultReportsPageSize = 20
@@ -79,13 +81,20 @@ func (h *CandidatesHandler) ListReports(w http.ResponseWriter, r *http.Request) 
 		totalPages = 1
 	}
 
+	unscanned, err := queries.CountUnscannedForJob(r.Context(), h.Pool, jobID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(listReportsResponse{
-		Reports:    reports,
-		Page:       page,
-		PageSize:   pageSize,
-		Total:      total,
-		TotalPages: totalPages,
+		Reports:        reports,
+		Page:           page,
+		PageSize:       pageSize,
+		Total:          total,
+		TotalPages:     totalPages,
+		UnscannedCount: unscanned,
 	})
 }
 

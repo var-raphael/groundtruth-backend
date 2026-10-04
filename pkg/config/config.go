@@ -21,6 +21,14 @@ type Config struct {
 	GithubToken     string
 	Port            string
 	DashboardSecret string
+
+	TokenEncryptionKey string
+	SupabaseURL        string
+	AdminEmails        []string
+
+	PaystackSecretKey   string
+	PaystackProPlanCode string
+	AppURL              string
 }
 
 // Load reads a .env file if present (ignored if missing, e.g. in production
@@ -30,11 +38,22 @@ func Load() (*Config, error) {
 	_ = godotenv.Overload()
 
 	cfg := &Config{
-		DatabaseURL:     os.Getenv("DATABASE_URL"),
-		MistralAPIKeys:  parseCommaSeparated(os.Getenv("MISTRAL_API_KEY")),
+		DatabaseURL:    os.Getenv("DATABASE_URL"),
+		MistralAPIKeys: parseCommaSeparated(os.Getenv("MISTRAL_API_KEY")),
 		GithubToken:     os.Getenv("GITHUB_TOKEN"),
 		Port:            os.Getenv("PORT"),
 		DashboardSecret: os.Getenv("DASHBOARD_SECRET"),
+
+		TokenEncryptionKey: os.Getenv("TOKEN_ENCRYPTION_KEY"),
+		SupabaseURL:        os.Getenv("SUPABASE_URL"),
+		AdminEmails:        splitList(os.Getenv("ADMIN_EMAILS")),
+
+		PaystackSecretKey:   os.Getenv("PAYSTACK_SECRET_KEY"),
+		PaystackProPlanCode: os.Getenv("PAYSTACK_PRO_PLAN_CODE"),
+		AppURL:              os.Getenv("APP_URL"),
+	}
+	if cfg.AppURL == "" {
+		cfg.AppURL = "http://localhost:3000"
 	}
 
 	if cfg.Port == "" {
@@ -53,6 +72,12 @@ func Load() (*Config, error) {
 	}
 	if cfg.DashboardSecret == "" {
 		missing = append(missing, "DASHBOARD_SECRET")
+	}
+	if cfg.TokenEncryptionKey == "" {
+		missing = append(missing, "TOKEN_ENCRYPTION_KEY")
+	}
+	if cfg.SupabaseURL == "" {
+		missing = append(missing, "SUPABASE_URL")
 	}
 	if len(missing) > 0 {
 		return nil, fmt.Errorf("missing required env vars: %v", missing)
@@ -74,4 +99,14 @@ func parseCommaSeparated(s string) []string {
 		}
 	}
 	return result
+}
+
+func splitList(raw string) []string {
+	var out []string
+	for _, part := range strings.Split(raw, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }

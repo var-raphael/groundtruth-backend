@@ -3,11 +3,26 @@ package queries
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/var-raphael/groundtruth/internal/models"
+	"github.com/var-raphael/groundtruth/internal/secrets"
 )
+
+func decryptToken(c *models.Candidate) {
+	if c.GithubToken == nil || *c.GithubToken == "" {
+		return
+	}
+	plain, err := secrets.Decrypt(*c.GithubToken)
+	if err != nil {
+		log.Printf("queries: could not decrypt github token for candidate %s, ignoring it: %v", c.ID, err)
+		c.GithubToken = nil
+		return
+	}
+	c.GithubToken = &plain
+}
 
 func CreateCandidate(ctx context.Context, pool *pgxpool.Pool, c *models.Candidate) (*models.Candidate, error) {
 	const q = `
@@ -20,9 +35,18 @@ func CreateCandidate(ctx context.Context, pool *pgxpool.Pool, c *models.Candidat
 		c.Status = models.StatusQueued
 	}
 
+	var tokenArg *string
+	if c.GithubToken != nil && *c.GithubToken != "" {
+		enc, err := secrets.Encrypt(*c.GithubToken)
+		if err != nil {
+			return nil, fmt.Errorf("encrypting github token: %w", err)
+		}
+		tokenArg = &enc
+	}
+
 	row := pool.QueryRow(ctx, q,
 		c.JobID, c.FullName, c.Email, c.Country, c.City, c.Timezone,
-		c.YearsExperience, c.GithubID, c.GithubUsername, c.GithubToken,
+		c.YearsExperience, c.GithubID, c.GithubUsername, tokenArg,
 		c.LinkedIn, c.X, c.Portfolio, c.Status,
 	)
 	if err := row.Scan(&c.ID, &c.AppliedAt, &c.StatusUpdatedAt); err != nil {
@@ -48,6 +72,7 @@ func GetCandidate(ctx context.Context, pool *pgxpool.Pool, id string) (*models.C
 	if err != nil {
 		return nil, fmt.Errorf("fetching candidate %s: %w", id, err)
 	}
+	decryptToken(&c)
 	return &c, nil
 }
 
@@ -79,6 +104,7 @@ func ListCandidatesByJob(ctx context.Context, pool *pgxpool.Pool, jobID string, 
 		); err != nil {
 			return nil, fmt.Errorf("scanning candidate row: %w", err)
 		}
+		decryptToken(&c)
 		candidates = append(candidates, c)
 	}
 	return candidates, rows.Err()
@@ -98,6 +124,28 @@ func CountCandidatesForJob(ctx context.Context, pool *pgxpool.Pool, jobID string
 	var count int
 	if err := pool.QueryRow(ctx, q, jobID).Scan(&count); err != nil {
 		return 0, fmt.Errorf("counting candidates for job %s: %w", jobID, err)
+	}
+	return count, nil
+}
+
+func HasApplied(ctx context.Context, pool *pgxpool.Pool, jobID string, githubID int64, email string) (bool, error) {
+	const q = `
+		SELECT EXISTS (
+			SELECT 1 FROM candidates
+			WHERE job_id = $1 AND (github_id = $2 OR lower(email) = lower($3))
+		)`
+	var exists bool
+	if err := pool.QueryRow(ctx, q, jobID, githubID, email).Scan(&exists); err != nil {
+		return false, fmt.Errorf("checking existing application for job %s: %w", jobID, err)
+	}
+	return exists, nil
+}
+
+func CountUnscannedForJob(ctx context.Context, pool *pgxpool.Pool, jobID string) (int, error) {
+	const q = `SELECT count(*) FROM candidates WHERE job_id = $1 AND status = $2`
+	var count int
+	if err := pool.QueryRow(ctx, q, jobID, models.StatusUnscanned).Scan(&count); err != nil {
+		return 0, fmt.Errorf("counting unscanned candidates for job %s: %w", jobID, err)
 	}
 	return count, nil
 }
