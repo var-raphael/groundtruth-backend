@@ -1,4 +1,4 @@
 .env
 test.json
 test.txt
-logfile
+logfile.env
