@@ -14,6 +14,7 @@ import (
 
 func isPublicPath(path string) bool {
 	return path == "/health" ||
+		path == "/ping" ||
 		path == "/jobs/public" ||
 		strings.HasPrefix(path, "/public/") ||
 		strings.HasPrefix(path, "/shared/") ||
