@@ -144,6 +144,10 @@ var strippedFilenames = map[string]bool{
 
 var envFilePattern = regexp.MustCompile(`(^|/)\.env($|\.)`)
 
+// envTemplatePattern matches committed template files such as .env.example.
+// Those are meant to be public and are not a credential leak.
+var envTemplatePattern = regexp.MustCompile(`\.(example|sample|template|dist|defaults)$`)
+
 const (
 	minClusterFiles     = 30
 	minClusterPercent   = 10.0
@@ -233,7 +237,7 @@ func DetectJunk(allPaths, blobPaths []string) JunkSignals {
 	var signals JunkSignals
 
 	for _, p := range allPaths {
-		if envFilePattern.MatchString(p) {
+		if envFilePattern.MatchString(p) && !envTemplatePattern.MatchString(p) {
 			signals.EnvFiles = append(signals.EnvFiles, p)
 		}
 	}

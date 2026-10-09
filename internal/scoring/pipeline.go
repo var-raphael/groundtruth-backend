@@ -112,6 +112,16 @@ func ScoreWithEvidence(
 
 	llm.EnforceReasonLimits(reasoning)
 
+	reposWithEnv := make(map[string]bool)
+	for _, r := range evidence.TopRepos {
+		if r.Tree != nil && len(r.Tree.Junk.EnvFiles) > 0 {
+			reposWithEnv[r.Repo.Name] = true
+		}
+	}
+	for _, point := range llm.DropUnsupportedEnvClaims(reasoning, reposWithEnv) {
+		log.Printf("scoring %s: dropped unsupported env-file claim: %s", username, point)
+	}
+
 	evidenceWarrantedFlag := anyRepoFlaggedPadding(evidence.TopRepos) || anyRepoFlaggedJunkOrEnv(evidence.TopRepos)
 	ok, warning := llm.VerifyTrustFlagHonored(reasoning, evidenceWarrantedFlag)
 	if !ok {
