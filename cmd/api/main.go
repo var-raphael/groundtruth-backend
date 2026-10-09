@@ -109,6 +109,19 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
+	
+	mux.HandleFunc("GET /ping", func(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	var one int
+	if err := pool.QueryRow(ctx, "SELECT 1").Scan(&one); err != nil {
+		http.Error(w, "db unreachable", http.StatusServiceUnavailable)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("pong"))
+})
 
 	log.Printf("listening on :%s", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, middleware.CORS(middleware.RecruiterAuth(verifier, pool, mux))); err != nil {
