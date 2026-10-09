@@ -96,12 +96,14 @@ func (c *Client) InitializeTransaction(ctx context.Context, email string, amount
 		AuthorizationURL string `json:"authorization_url"`
 	}
 	err := c.do(ctx, http.MethodPost, "/transaction/initialize", map[string]any{
-		"email":        email,
-		"amount":       amount,
-		"plan":         plan,
-		"callback_url": callbackURL,
-		"metadata":     metadata,
-	}, &data)
+	"email":        email,
+	"amount":       amount,
+	"plan":         plan,
+	"callback_url": callbackURL,
+	"metadata":     metadata,
+	"channels":     []string{"card"},
+}, &data)
+
 	if err != nil {
 		return "", err
 	}
