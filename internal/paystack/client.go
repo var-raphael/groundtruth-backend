@@ -101,6 +101,7 @@ func (c *Client) InitializeTransaction(ctx context.Context, email string, amount
 		"plan":         plan,
 		"callback_url": callbackURL,
 		"metadata":     metadata,
+		"channels":     []string{"card"},
 	}, &data)
 	if err != nil {
 		return "", err
