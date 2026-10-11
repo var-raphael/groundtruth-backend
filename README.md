@@ -6,7 +6,7 @@ Groundtruth is a hiring tool for engineering teams. It reads a candidate's GitHu
 
 Hire on verified work, not resumes.
 
-🌐 **Website:** [ground-truth.vercel.app](https://ground-truth.vercel.app)
+🌐 **Website:** [https://ground-truth-app.vercel.app](https://ground-truth-app.vercel.app)
 
 ---
 
